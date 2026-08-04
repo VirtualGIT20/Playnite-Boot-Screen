@@ -31,53 +31,156 @@ jobs:
         shell: powershell
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Invalid release tag: ${{ github.ref_name }}"
+          }
+
+          "version=$version" |
+            Out-File `
+              -FilePath $env:GITHUB_OUTPUT `
+              -Append `
+              -Encoding utf8
 
       - name: Ensure .NET Framework 4.6.2 targeting pack
         shell: powershell
         run: |
-          $frameworkList = Join-Path ${env:ProgramFiles(x86)} 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.2\RedistList\FrameworkList.xml'
+          $frameworkList = Join-Path `
+            ${env:ProgramFiles(x86)} `
+            'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.2\RedistList\FrameworkList.xml'
+
           if (-not (Test-Path -LiteralPath $frameworkList)) {
             choco install netfx-4.6.2-devpack -y --no-progress
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Installation of .NET Framework 4.6.2 Developer Pack failed with exit code $LASTEXITCODE."
+            }
           }
+
           if (-not (Test-Path -LiteralPath $frameworkList)) {
             throw '.NET Framework 4.6.2 Targeting Pack is still unavailable.'
           }
 
       - name: Verify release metadata
         shell: powershell
-        run: .\scripts\verify-release.ps1 -Version '${{ steps.version.outputs.version }}'
+        run: |
+          .\scripts\verify-release.ps1 `
+            -Version '${{ steps.version.outputs.version }}'
 
       - name: Install Playnite for Toolbox
         shell: powershell
         run: |
-          winget install --id Playnite.Playnite --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+          winget install `
+            --id Playnite.Playnite `
+            --exact `
+            --silent `
+            --accept-package-agreements `
+            --accept-source-agreements `
+            --disable-interactivity
+
           if ($LASTEXITCODE -ne 0) {
             Write-Warning 'WinGet installation failed; trying Chocolatey.'
+
             choco install playnite -y --no-progress
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Playnite installation failed with exit code $LASTEXITCODE."
+            }
           }
 
           $toolbox = @(
             (Join-Path $env:LOCALAPPDATA 'Playnite\Toolbox.exe'),
             (Join-Path $env:ProgramFiles 'Playnite\Toolbox.exe'),
             (Join-Path ${env:ProgramFiles(x86)} 'Playnite\Toolbox.exe')
-          ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+          ) |
+            Where-Object { Test-Path -LiteralPath $_ } |
+            Select-Object -First 1
 
           if (-not $toolbox) {
             throw 'Playnite installed, but Toolbox.exe was not found.'
           }
-          "PLAYNITE_TOOLBOX=$toolbox" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          Write-Host "Playnite Toolbox: $toolbox"
+
+          "PLAYNITE_TOOLBOX=$toolbox" |
+            Out-File `
+              -FilePath $env:GITHUB_ENV `
+              -Append `
+              -Encoding utf8
 
       - name: Build and package
         shell: powershell
-        run: .\scripts\pack.ps1 -Configuration Release -ToolboxPath $env:PLAYNITE_TOOLBOX
+        run: |
+          .\scripts\pack.ps1 `
+            -Configuration Release `
+            -ToolboxPath $env:PLAYNITE_TOOLBOX
 
-      - name: Create GitHub release
+      - name: Validate release assets
+        shell: powershell
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $package = "dist\Playnite-Boot-Screen-v$version.pext"
+          $checksum = "$package.sha256"
+
+          if (-not (Test-Path -LiteralPath $package)) {
+            throw "Package not found: $package"
+          }
+
+          if (-not (Test-Path -LiteralPath $checksum)) {
+            throw "Checksum not found: $checksum"
+          }
+
+          Write-Host "Package:  $package"
+          Write-Host "Checksum: $checksum"
+
+      - name: Create or update GitHub release
         shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = '${{ steps.version.outputs.version }}'
+          $tag = '${{ github.ref_name }}'
           $package = "dist\Playnite-Boot-Screen-v$version.pext"
           $checksum = "$package.sha256"
-          gh release create '${{ github.ref_name }}' $package $checksum --title "Playnite Boot Screen $version" --notes-file RELEASE_NOTES.md --verify-tag
+          $title = "Playnite Boot Screen $version"
+
+          # Check whether the release already exists.
+          gh release view $tag *> $null
+          $releaseExists = $LASTEXITCODE -eq 0
+
+          if ($releaseExists) {
+            Write-Host "Release $tag already exists. Updating metadata and assets."
+
+            gh release edit $tag `
+              --title $title `
+              --notes-file RELEASE_NOTES.md
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to update release $tag."
+            }
+
+            gh release upload $tag `
+              $package `
+              $checksum `
+              --clobber
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to upload assets to release $tag."
+            }
+          }
+          else {
+            Write-Host "Creating release $tag."
+
+            gh release create $tag `
+              $package `
+              $checksum `
+              --title $title `
+              --notes-file RELEASE_NOTES.md `
+              --verify-tag
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to create release $tag."
+            }
+          }
+
+          Write-Host "Release $tag completed successfully."
