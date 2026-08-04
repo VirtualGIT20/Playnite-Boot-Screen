@@ -1,0 +1,14 @@
+Id: PlayniteBoot_71b5c099-3c25-4fe7-b26f-1262c7f0e138
+Name: Playnite Boot Screen
+Author: VirtualGIT20
+Version: 0.4.0
+Module: PlayniteBoot.dll
+Type: GenericPlugin
+Icon: icon.png
+Links:
+  - Name: Website
+    Url: https://github.com/VirtualGIT20/Playnite-Boot-Screen
+  - Name: Issues
+    Url: https://github.com/VirtualGIT20/Playnite-Boot-Screen/issues
+  - Name: Changelog
+    Url: https://github.com/VirtualGIT20/Playnite-Boot-Screen/blob/main/CHANGELOG.md

@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+
+      - name: Set up NuGet
+        uses: NuGet/setup-nuget@v2
+        with:
+          nuget-version: latest
+
+      - name: Resolve version from tag
+        id: version
+        shell: powershell
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Ensure .NET Framework 4.6.2 targeting pack
+        shell: powershell
+        run: |
+          $frameworkList = Join-Path ${env:ProgramFiles(x86)} 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.2\RedistList\FrameworkList.xml'
+          if (-not (Test-Path -LiteralPath $frameworkList)) {
+            choco install netfx-4.6.2-devpack -y --no-progress
+          }
+          if (-not (Test-Path -LiteralPath $frameworkList)) {
+            throw '.NET Framework 4.6.2 Targeting Pack is still unavailable.'
+          }
+
+      - name: Verify release metadata
+        shell: powershell
+        run: .\scripts\verify-release.ps1 -Version '${{ steps.version.outputs.version }}'
+
+      - name: Install Playnite for Toolbox
+        shell: powershell
+        run: |
+          winget install --id Playnite.Playnite --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning 'WinGet installation failed; trying Chocolatey.'
+            choco install playnite -y --no-progress
+          }
+
+          $toolbox = @(
+            (Join-Path $env:LOCALAPPDATA 'Playnite\Toolbox.exe'),
+            (Join-Path $env:ProgramFiles 'Playnite\Toolbox.exe'),
+            (Join-Path ${env:ProgramFiles(x86)} 'Playnite\Toolbox.exe')
+          ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+
+          if (-not $toolbox) {
+            throw 'Playnite installed, but Toolbox.exe was not found.'
+          }
+          "PLAYNITE_TOOLBOX=$toolbox" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Build and package
+        shell: powershell
+        run: .\scripts\pack.ps1 -Configuration Release -ToolboxPath $env:PLAYNITE_TOOLBOX
+
+      - name: Create GitHub release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $package = "dist\Playnite-Boot-Screen-v$version.pext"
+          $checksum = "$package.sha256"
+          gh release create '${{ github.ref_name }}' $package $checksum --title "Playnite Boot Screen $version" --notes-file RELEASE_NOTES.md --verify-tag

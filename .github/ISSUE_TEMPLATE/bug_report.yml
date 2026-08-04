@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible problem in Playnite Boot Screen
+title: '[Bug] '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please test with Playnite's default Fullscreen theme when reporting a persistent black screen.
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      placeholder: 0.4.0
+    validations:
+      required: true
+  - type: input
+    id: playnite-version
+    attributes:
+      label: Playnite version
+    validations:
+      required: true
+  - type: dropdown
+    id: launch-mode
+    attributes:
+      label: Launch mode
+      options:
+        - Direct shortcut / Standalone
+        - Streaming Preload and Continue
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Include the expected behavior and exact reproduction steps.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostic information
+      description: Paste the output of Copy diagnostic information. It does not include private paths or log contents.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log excerpts
+      description: Attach or paste timestamp-matched excerpts from the runtime log, playnite.log, and extensions.log. Remove personal paths if desired.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I tested the latest release.
+          required: true
+        - label: For a rendering or black-screen issue, I also tested Playnite's default Fullscreen theme.

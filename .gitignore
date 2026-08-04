@@ -1,0 +1,12 @@
+.vs/
+bin/
+obj/
+packages/
+dist/
+artifacts/
+*.user
+*.suo
+*.pdb
+*.pext
+*.sha256
+*.tmp

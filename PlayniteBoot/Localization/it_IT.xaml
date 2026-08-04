@@ -1,0 +1,124 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="LOCPlayniteBootTabGeneral">Generale</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTabStreaming">Streaming</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTabInstallation">Installazione e diagnostica</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootIntroGeneral">Scegli il video di avvio e le poche opzioni che controllano quando mostrare Playnite. In genere non è necessario modificare i parametri avanzati di rilevamento.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroStreaming">Per Sunshine, Apollo e fork compatibili: usa il primo comando come Prep e il secondo come Detached. Il video parte prima dello stream e mantiene coperto il desktop.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootGroupVideo">Video</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupScreen">Schermo</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupAudioTransitions">Audio e transizioni</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupStreamingCommands">Comandi streaming</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupRuntime">Runtime gestito</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupShortcuts">Collegamenti</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupDiagnostics">Diagnostica</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootLabelVideoFile">File video</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelMonitor">Monitor</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelVideoStretch">Adattamento video</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelVolume">Volume</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelFadeIn">Fade-in (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelFadeOut">Fade-out (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelMinimumDuration">Durata minima (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelReadyStability">Stabilità finestra Playnite (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelStartTimeout">Timeout avvio Playnite (s)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelVideoReadyPosition">Posizione video-ready (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelVideoReadySamples">Campioni video-ready</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelVideoReadyTimeout">Timeout video-ready (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelPlayniteExecutable">Eseguibile Playnite</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelLaunchArguments">Argomenti di avvio</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelStreamingMonitor">Monitor streaming</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelPreloadReadyTimeout">Timeout preload-ready (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelContinueTimeout">Timeout Continue (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelPreloadAbandonTimeout">Abbandona preload dopo (ms)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelFallback">Fallback</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelRuntimeDirectory">Cartella runtime</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelDirectCommand">Comando di avvio diretto</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelShortcutName">Nome collegamento</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootCheckWaitForVideoEnd">Attendi la fine del video prima di mostrare Playnite</sys:String>
+    <sys:String x:Key="LOCPlayniteBootCheckLoopVideo">Ripeti il video</sys:String>
+    <sys:String x:Key="LOCPlayniteBootCheckHideCursor">Nascondi il cursore del mouse</sys:String>
+    <sys:String x:Key="LOCPlayniteBootCheckMute">Disattiva l'audio del video</sys:String>
+    <sys:String x:Key="LOCPlayniteBootCheckEnableLog">Abilita log del runtime</sys:String>
+    <sys:String x:Key="LOCPlayniteBootCheckStreamingEnabled">Abilita integrazione preload streaming</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootTipWaitForVideoEnd">Playnite parte subito in background, ma l'overlay sfuma solo quando Playnite è pronta e il video raggiunge la fine naturale.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTipLoopVideo">La ripetizione non è disponibile quando si attende la fine naturale del video.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTipMinimumDuration">Ignorata quando si attende il video completo.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTipPlayniteExecutable">Mantieni “auto” salvo installazioni di Playnite in percorsi non standard.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootButtonBrowse">Sfoglia…</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonDefaultVideo">Usa predefinito</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonResetSettings">Ripristina impostazioni predefinite</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonCopy">Copia</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonInstallRuntime">Installa/aggiorna runtime</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonOpenRuntime">Apri cartella runtime</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonOpenLogs">Apri log</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonCreateDesktopShortcut">Crea/aggiorna collegamento Desktop</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonCreateStartShortcut">Crea/aggiorna collegamento Start</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonRemoveDesktopShortcut">Rimuovi collegamento Desktop</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonRemoveStartShortcut">Rimuovi collegamento Start</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonCopyDiagnostics">Copia informazioni diagnostiche</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootExpanderAdvanced">Impostazioni avanzate</sys:String>
+    <sys:String x:Key="LOCPlayniteBootExpanderStreamingAdvanced">Impostazioni streaming avanzate</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootStreamingStepPrep">1. Prep command — Preload</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStreamingStepContinue">2. Detached command — Continue</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStreamingNoUndo">Non serve alcun comando Undo. Continue riutilizza il video già avviato da Preload.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootDiagnosticsDescription">Copia soltanto versioni e stato delle funzionalità. Non include percorsi dei file, credenziali o contenuto dei log.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootOptionMonitorClientResolution">Abbina la risoluzione del client streaming</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionMonitorUseGeneral">Usa il monitor scelto in Generale</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionMonitorAutomatic">Automatico (monitor contenente il cursore)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionMonitorPrimary">Monitor principale</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionMonitorIndexed">Monitor {0}: {1} ({2}×{3})</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionMonitorSimple">Monitor {0}</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionMonitorUnavailable">Monitor {0} (attualmente non disponibile)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionStretchFillCrop">Riempi lo schermo, ritaglia se necessario</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionStretchFit">Adatta senza ritagliare</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionStretchStretch">Estendi per riempire</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionFallbackStandalone">Avvio normale se il preload non è disponibile</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootStatusDefaultVideoSelected">È stato selezionato il video predefinito incluso.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusDefaultsRestored">Impostazioni predefinite ripristinate. I video personalizzati e i log non sono stati eliminati.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusRuntimeInstalled">Runtime installato: {0}; file copiati: {1}.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusRuntimeReady">Runtime pronto — versione {0}.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusRuntimePartial">Runtime installato solo in parte. Usa Installa/aggiorna runtime.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusRuntimeMissing">Runtime non ancora installato.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusShortcutCreated">Collegamento “{0}” creato o aggiornato in {1}.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusShortcutRemoved">Collegamento rimosso da {0}.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusShortcutNotFound">Nessun collegamento gestito trovato in {0}.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusCommandCopied">Comando copiato negli appunti.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusDiagnosticsCopied">Informazioni diagnostiche copiate negli appunti.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootLocationDesktop">Desktop</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLocationStartMenu">menu Start</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootConfirmResetSettings">Ripristinare tutte le impostazioni di Playnite Boot Screen? I video personalizzati e i log non verranno eliminati.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootConfirmRemoveShortcut">Rimuovere il collegamento Playnite Boot Screen da {0}?</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootValidationVideoMissing">Il video configurato non esiste: {0}</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationVideoPath">Il percorso del video non è valido.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationVolume">Il volume deve essere compreso tra 0 e 100.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationStreaming">La sezione delle impostazioni streaming non è valida.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationLoopWaitConflict">Ripeti video e Attendi fine video non possono essere attivi contemporaneamente.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationShortcutEmpty">Il nome del collegamento non può essere vuoto.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationShortcutLength">Il nome del collegamento non può superare 120 caratteri.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationShortcutCharacters">Il nome del collegamento contiene caratteri non validi o termina con un punto o uno spazio.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationShortcutReserved">Il nome del collegamento è riservato da Windows.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationPositive">{0} deve essere maggiore di zero.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationNonNegative">{0} non può essere negativo.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationMinimum">{0} deve essere almeno {1}.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootErrorRuntimeTemplateMissing">Template del runtime non trovato: {0}</sys:String>
+    <sys:String x:Key="LOCPlayniteBootErrorShortcutInstallerMissing">Installer dei collegamenti non trovato.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootErrorShortcutProcess">Impossibile avviare PowerShell per creare il collegamento.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootErrorShortcutTimeout">Timeout durante l'operazione sul collegamento.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutDescription">Avvia Playnite Fullscreen con un video personalizzato e senza finestra console.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootVideoFileFilter">File video|*.mp4;*.mkv;*.webm;*.avi;*.mov|Tutti i file|*.*</sys:String>
+</ResourceDictionary>

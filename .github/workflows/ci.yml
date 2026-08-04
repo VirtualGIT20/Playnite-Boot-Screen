@@ -1,0 +1,54 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+
+      - name: Set up NuGet
+        uses: NuGet/setup-nuget@v2
+        with:
+          nuget-version: latest
+
+      - name: Ensure .NET Framework 4.6.2 targeting pack
+        shell: powershell
+        run: |
+          $frameworkList = Join-Path ${env:ProgramFiles(x86)} 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.2\RedistList\FrameworkList.xml'
+          if (-not (Test-Path -LiteralPath $frameworkList)) {
+            choco install netfx-4.6.2-devpack -y --no-progress
+          }
+          if (-not (Test-Path -LiteralPath $frameworkList)) {
+            throw '.NET Framework 4.6.2 Targeting Pack is still unavailable.'
+          }
+
+      - name: Verify release metadata
+        shell: powershell
+        run: .\scripts\verify-release.ps1 -Version 0.4.0
+
+      - name: Build Release
+        shell: powershell
+        run: .\scripts\build.ps1 -Configuration Release
+
+      - name: Upload compiled extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: Playnite-Boot-Screen-build
+          path: PlayniteBoot/bin/Release
+          if-no-files-found: error
