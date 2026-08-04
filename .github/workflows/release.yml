@@ -22,7 +22,7 @@ jobs:
           msbuild-architecture: x64
 
       - name: Set up NuGet
-        uses: NuGet/setup-nuget@v2
+        uses: NuGet/setup-nuget@v4
         with:
           nuget-version: latest
 
