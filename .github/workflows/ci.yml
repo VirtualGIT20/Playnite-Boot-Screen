@@ -47,7 +47,7 @@ jobs:
         run: .\scripts\build.ps1 -Configuration Release
 
       - name: Upload compiled extension
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Playnite-Boot-Screen-build
           path: PlayniteBoot/bin/Release
