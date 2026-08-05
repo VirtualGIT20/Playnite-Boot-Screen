@@ -66,6 +66,24 @@ if ($runtimeVersion -notmatch '^\d+\.\d+\.\d+$') {
     throw "Invalid runtime version: $runtimeVersion"
 }
 
+$runtimeScriptPath = Join-Path $root 'PlayniteBoot\RuntimeTemplate\PlayniteBoot.ps1'
+$runtimeScript = Get-Content -LiteralPath $runtimeScriptPath -Raw -Encoding UTF8
+$runtimeBehaviorChecks = @(
+    @{ Name = 'explicit Alt+Tab hook'; Pass = $runtimeScript -match 'WmPlayniteBootAltTab' },
+    @{ Name = 'streaming cancellation guard'; Pass = $runtimeScript -match 'streaming-cancelled\.flag' },
+    @{ Name = 'Playnite Fullscreen cancellation'; Pass = $runtimeScript -match '\$stopPlayniteFullscreen' },
+    @{ Name = 'foreground polling removed'; Pass = $runtimeScript -notmatch '\$yieldForegroundIfNeeded' }
+)
+
+$failedRuntimeBehaviorChecks = @($runtimeBehaviorChecks | Where-Object { -not $_.Pass })
+foreach ($check in $runtimeBehaviorChecks) {
+    Write-Host ("Runtime {0}: {1}" -f $check.Name, $(if ($check.Pass) { 'OK' } else { 'FAILED' }))
+}
+
+if ($failedRuntimeBehaviorChecks.Count -gt 0) {
+    throw 'Required input and cancellation behavior is missing from the runtime script.'
+}
+
 $videoPath = Join-Path $root 'PlayniteBoot\RuntimeTemplate\media\boot-4k60.mp4'
 if (-not (Test-Path -LiteralPath $videoPath -PathType Leaf)) {
     throw "Default video not found: $videoPath"

@@ -8,7 +8,8 @@ Highlights:
 - direct Desktop and Start menu shortcuts;
 - optional full-video playback before revealing Playnite;
 - Sunshine/Apollo-compatible streaming preload using Prep and Detached commands;
-- Alt+F4 closes the boot overlay while an already launched Playnite session continues;
+- Alt+F4 cancels the active boot sequence and stops the Playnite Fullscreen process started by it;
+- Alt+Tab explicitly yields the overlay while automatic foreground changes from streaming launchers are ignored;
 - English and Italian UI;
 - hardened shortcut path handling and absolute Windows PowerShell resolution;
 - clean, deterministic build and packaging output;

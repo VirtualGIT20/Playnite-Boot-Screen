@@ -8,5 +8,5 @@ Packages:
       - First public release of Playnite Boot Screen.
       - English 4K60 default boot video with configurable custom media.
       - Direct shortcuts and Sunshine/Apollo-compatible streaming preload.
-      - Alt+F4 closes the overlay without terminating an already launched Playnite session.
+      - Alt+F4 cancels the boot sequence and stops the Playnite Fullscreen process started by it.
       - Hardened shortcut handling, deterministic packaging, and English/Italian localization.

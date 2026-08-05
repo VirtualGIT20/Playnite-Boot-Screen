@@ -2,7 +2,9 @@
 
 ## Close a persistent boot overlay
 
-Press **Alt+F4** while the Playnite Boot Screen overlay is active. If Playnite has already been launched, it continues independently.
+Press **Alt+F4** while the Playnite Boot Screen overlay is active. This cancels the boot sequence and also stops the Playnite Fullscreen process launched by that sequence.
+
+Press **Alt+Tab** instead when you only want to move the overlay into the background and continue launching Playnite. The mouse cursor is restored after the explicit Alt+Tab.
 
 If the overlay or host process is no longer responding, open PowerShell on the host PC and run:
 
@@ -12,7 +14,7 @@ Get-CimInstance Win32_Process |
     ForEach-Object { Invoke-CimMethod -InputObject $_ -MethodName Terminate | Out-Null }
 ```
 
-To also close Playnite Fullscreen, run:
+If Playnite Fullscreen is still present after a failed cancellation, run:
 
 ```powershell
 Stop-Process -Name Playnite.FullscreenApp -Force -ErrorAction SilentlyContinue

@@ -270,6 +270,8 @@ if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) {
 
 $baseDirectory = Split-Path -Parent $ConfigPath
 $config = Get-Content -LiteralPath $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$streamingCancellationPath = Join-Path $baseDirectory 'streaming-cancelled.flag'
+$script:continueWasCancelled = $false
 
 $logEnabled = [bool](Get-ConfigValue -Config $config -Name 'logEnabled' -DefaultValue $true)
 $logPathValue = [string](Get-ConfigValue -Config $config -Name 'logPath' -DefaultValue '.\logs\PlayniteBoot.log')
@@ -490,6 +492,44 @@ function Close-CoordinationHandles {
     if ($null -ne $StopEvent) { $StopEvent.Dispose() }
 }
 
+function Clear-StreamingCancellation {
+    try {
+        if (Test-Path -LiteralPath $streamingCancellationPath -PathType Leaf) {
+            Remove-Item -LiteralPath $streamingCancellationPath -Force
+        }
+    }
+    catch {
+        Write-Log "Could not clear the previous streaming cancellation marker: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+function Set-StreamingCancellation {
+    try {
+        [IO.File]::WriteAllText(
+            $streamingCancellationPath,
+            [DateTime]::UtcNow.ToString('O'),
+            [Text.Encoding]::UTF8
+        )
+    }
+    catch {
+        Write-Log "Could not persist the streaming cancellation marker: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+function Test-StreamingCancellation {
+    try {
+        if (-not (Test-Path -LiteralPath $streamingCancellationPath -PathType Leaf)) {
+            return $false
+        }
+
+        return $true
+    }
+    catch {
+        Write-Log "Could not read the streaming cancellation marker: $($_.Exception.Message)" 'WARN'
+        return $false
+    }
+}
+
 function Start-PreloadHostProcess {
     $powerShellPath = Join-Path $PSHOME 'powershell.exe'
     $processInfo = New-Object System.Diagnostics.ProcessStartInfo
@@ -508,6 +548,14 @@ function Start-PreloadHostProcess {
 }
 
 function Invoke-PreloadCommand {
+    # Ogni Prep apre una nuova sessione. Un eventuale marker rimasto da una
+    # cancellazione precedente non deve influenzare il nuovo avvio. Non lo
+    # rimuoviamo se un host e ancora attivo, per non perdere una cancellazione
+    # appena richiesta durante una chiamata Prep duplicata.
+    if (-not (Test-NamedMutexExists -Name $coordinationNames.HostMutex)) {
+        Clear-StreamingCancellation
+    }
+
     if (-not $streamingSettings.Enabled) {
         Write-Log 'Streaming integration is disabled. The Prep command will exit without starting preload.' 'WARN'
         return 0
@@ -558,12 +606,24 @@ function Invoke-PreloadCommand {
 }
 
 function Invoke-ContinueCommand {
+    if (Test-StreamingCancellation) {
+        $script:continueWasCancelled = $true
+        Write-Log 'The preload session was cancelled with Alt+F4. Continue will exit without launching Playnite.'
+        return $false
+    }
+
     if (-not $streamingSettings.Enabled) {
         Write-Log 'Streaming integration is disabled. Continue will use standalone mode.' 'WARN'
         return $false
     }
 
     if (-not (Test-NamedMutexExists -Name $coordinationNames.HostMutex)) {
+        if (Test-StreamingCancellation) {
+            $script:continueWasCancelled = $true
+            Write-Log 'The preload host closed after an Alt+F4 cancellation. Continue will not use the standalone fallback.'
+            return $false
+        }
+
         Write-Log 'No preload host was found.' 'WARN'
         return $false
     }
@@ -585,6 +645,12 @@ function Invoke-ContinueCommand {
         if (-not $readyEvent.WaitOne($streamingSettings.ContinueWaitTimeoutMilliseconds)) {
             Write-Log "The preload host exists but did not become ready within $($streamingSettings.ContinueWaitTimeoutMilliseconds) ms." 'WARN'
             [void]$stopEvent.Set()
+            return $false
+        }
+
+        if (Test-StreamingCancellation) {
+            $script:continueWasCancelled = $true
+            Write-Log 'The preload session was cancelled before Continue could launch Playnite.'
             return $false
         }
 
@@ -615,6 +681,10 @@ if ($Mode -eq 'Preload') {
 
 if ($Mode -eq 'Continue') {
     if (Invoke-ContinueCommand) {
+        exit 0
+    }
+
+    if ($script:continueWasCancelled) {
         exit 0
     }
 
@@ -711,7 +781,6 @@ try {
 
     Add-Type @"
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -729,12 +798,6 @@ public static class PlayniteBootNative
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll")]
-    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
     [StructLayout(LayoutKind.Sequential)]
     private struct KBDLLHOOKSTRUCT
     {
@@ -748,11 +811,13 @@ public static class PlayniteBootNative
     private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
     public const int WmPlayniteBootAltF4 = 0x8504;
+    public const int WmPlayniteBootAltTab = 0x8505;
 
     private const int WhKeyboardLl = 13;
     private const int HcAction = 0;
     private const int WmKeyDown = 0x0100;
     private const int WmSysKeyDown = 0x0104;
+    private const uint VkTab = 0x09;
     private const uint VkF4 = 0x73;
     private const uint LlkhfAltDown = 0x20;
 
@@ -760,6 +825,7 @@ public static class PlayniteBootNative
     private static IntPtr altF4TargetWindow = IntPtr.Zero;
     private static LowLevelKeyboardProc altF4HookProc;
     private static int altF4MessagePosted;
+    private static int altTabMessagePosted;
     private static int lastAltF4HookError;
 
     public static int LastAltF4HookError
@@ -813,6 +879,7 @@ public static class PlayniteBootNative
         lastAltF4HookError = 0;
         altF4TargetWindow = targetWindow;
         Interlocked.Exchange(ref altF4MessagePosted, 0);
+        Interlocked.Exchange(ref altTabMessagePosted, 0);
         altF4HookProc = AltF4HookCallback;
 
         IntPtr moduleHandle = GetModuleHandle(null);
@@ -840,6 +907,7 @@ public static class PlayniteBootNative
         altF4Hook = IntPtr.Zero;
         altF4TargetWindow = IntPtr.Zero;
         Interlocked.Exchange(ref altF4MessagePosted, 0);
+        Interlocked.Exchange(ref altTabMessagePosted, 0);
 
         bool removed = true;
         if (hook != IntPtr.Zero)
@@ -849,38 +917,6 @@ public static class PlayniteBootNative
 
         altF4HookProc = null;
         return removed;
-    }
-
-    private static bool ShouldInterceptAltF4()
-    {
-        IntPtr foregroundWindow = GetForegroundWindow();
-        if (foregroundWindow == IntPtr.Zero)
-        {
-            return false;
-        }
-
-        uint foregroundProcessId;
-        GetWindowThreadProcessId(foregroundWindow, out foregroundProcessId);
-        if (foregroundProcessId == 0)
-        {
-            return false;
-        }
-
-        if (foregroundProcessId == (uint)Process.GetCurrentProcess().Id)
-        {
-            return true;
-        }
-
-        try
-        {
-            string processName = Process.GetProcessById((int)foregroundProcessId).ProcessName;
-            return processName == "Playnite.FullscreenApp" ||
-                   processName == "Playnite.DesktopApp";
-        }
-        catch
-        {
-            return false;
-        }
     }
 
     private static IntPtr AltF4HookCallback(
@@ -902,8 +938,10 @@ public static class PlayniteBootNative
 
                 bool altF4 = keyboardData.vkCode == VkF4 &&
                              (keyboardData.flags & LlkhfAltDown) != 0;
+                bool altTab = keyboardData.vkCode == VkTab &&
+                              (keyboardData.flags & LlkhfAltDown) != 0;
 
-                if (altF4 && ShouldInterceptAltF4())
+                if (altF4)
                 {
                     if (Interlocked.Exchange(ref altF4MessagePosted, 1) == 0 &&
                         altF4TargetWindow != IntPtr.Zero)
@@ -916,8 +954,26 @@ public static class PlayniteBootNative
                         );
                     }
 
-                    // Impedisce che lo stesso Alt+F4 chiuda anche Playnite.
+                    // La cancellazione viene gestita una sola volta
+                    // dall'overlay, che decide come arrestare Playnite.
                     return new IntPtr(1);
+                }
+
+                if (altTab)
+                {
+                    if (Interlocked.Exchange(ref altTabMessagePosted, 1) == 0 &&
+                        altF4TargetWindow != IntPtr.Zero)
+                    {
+                        PostMessage(
+                            altF4TargetWindow,
+                            WmPlayniteBootAltTab,
+                            IntPtr.Zero,
+                            IntPtr.Zero
+                        );
+                    }
+
+                    // Alt+Tab deve continuare verso Windows. Il messaggio
+                    // personalizzato serve solo a demotare l'overlay.
                 }
             }
         }
@@ -1259,6 +1315,7 @@ public static class PlayniteBootNative
         PreloadWatch = [Diagnostics.Stopwatch]::new()
         Closing = $false
         UserYieldedForeground = $false
+        BootCancelled = $false
         AltF4HookInstalled = $false
         AltF4HookSource = $null
         AltF4WindowHook = $null
@@ -1305,86 +1362,31 @@ public static class PlayniteBootNative
         $state.AltF4WindowHook = $null
     }
 
-    # Se l'utente passa a un'altra applicazione, l'overlay continua il proprio
-    # lavoro ma smette di restare sopra tutte le finestre e non riprende il focus.
-    # Il controllo vive nel timer gia esistente, quindi funziona anche quando
-    # Playnite ha gia ricevuto il focus prima dell'Alt+Tab.
-    $yieldForegroundIfNeeded = {
+    # Un vero Alt+Tab dell'utente cede esplicitamente il foreground. Non usiamo
+    # il polling della finestra attiva: launcher, terminali e client streaming
+    # possono diventare foreground durante Prep/Continue senza che l'utente
+    # abbia chiesto di lasciare l'overlay.
+    $yieldOverlayForAltTab = {
         if ($state.Closing -or $state.UserYieldedForeground) {
             return
         }
 
-        try {
-            $foregroundWindow = [PlayniteBootNative]::GetForegroundWindow()
-            if ($foregroundWindow -eq [IntPtr]::Zero) {
-                return
+        $state.UserYieldedForeground = $true
+        & $uninstallAltF4Hook
+        $window.Topmost = $false
+
+        # Cursor.Hide agisce globalmente: dopo un vero Alt+Tab il cursore deve
+        # tornare immediatamente disponibile nell'app scelta dall'utente.
+        if ($script:cursorHidden) {
+            try {
+                [System.Windows.Forms.Cursor]::Show()
+                $script:cursorHidden = $false
             }
-
-            [uint32]$foregroundProcessId = 0
-            [void][PlayniteBootNative]::GetWindowThreadProcessId(
-                $foregroundWindow,
-                [ref]$foregroundProcessId
-            )
-
-            if ($foregroundProcessId -eq 0 -or
-                $foregroundProcessId -eq [uint32]$PID) {
-                return
+            catch {
             }
-
-            $foregroundIsPlaynite = $false
-
-            if ($null -ne $state.Process) {
-                try {
-                    if (-not $state.Process.HasExited -and
-                        [uint32]$state.Process.Id -eq $foregroundProcessId) {
-                        $foregroundIsPlaynite = $true
-                    }
-                }
-                catch {
-                }
-            }
-
-            $foregroundProcess = $null
-            if (-not $foregroundIsPlaynite) {
-                $foregroundProcess = Get-Process -Id ([int]$foregroundProcessId) -ErrorAction SilentlyContinue
-                if ($null -ne $foregroundProcess) {
-                    $foregroundProcessName = [string]$foregroundProcess.ProcessName
-                    $foregroundIsPlaynite = (
-                        $foregroundProcessName -eq 'Playnite.FullscreenApp' -or
-                        $foregroundProcessName -eq 'Playnite.DesktopApp'
-                    )
-                }
-            }
-
-            if ($foregroundIsPlaynite) {
-                return
-            }
-
-            $state.UserYieldedForeground = $true
-            & $uninstallAltF4Hook
-            $window.Topmost = $false
-
-            # Cursor.Hide agisce globalmente: quando l'utente lascia l'overlay
-            # il cursore deve tornare immediatamente disponibile.
-            if ($script:cursorHidden) {
-                try {
-                    [System.Windows.Forms.Cursor]::Show()
-                    $script:cursorHidden = $false
-                }
-                catch {
-                }
-            }
-
-            $foregroundDescription = "PID $foregroundProcessId"
-            if ($null -ne $foregroundProcess) {
-                $foregroundDescription = "$($foregroundProcess.ProcessName) (PID $foregroundProcessId)"
-            }
-
-            Write-Log "Foreground yielded to $foregroundDescription. The overlay will continue in the background."
         }
-        catch {
-            Write-Log "Could not process the foreground change: $($_.Exception.Message)" 'WARN'
-        }
+
+        Write-Log 'Alt+Tab received. The overlay will continue in the background and will no longer intercept Alt+F4.'
     }
 
     $timer = New-Object System.Windows.Threading.DispatcherTimer
@@ -1515,19 +1517,110 @@ public static class PlayniteBootNative
         $window.Close()
     }
 
+    $stopPlayniteFullscreen = {
+        $candidateProcesses = @()
+
+        if ($null -ne $state.Process) {
+            $candidateProcesses += $state.Process
+        }
+
+        $candidateProcesses += @(Get-Process -Name 'Playnite.FullscreenApp' -ErrorAction SilentlyContinue)
+        $candidateProcesses = @(
+            $candidateProcesses |
+                Where-Object { $null -ne $_ } |
+                Sort-Object -Property Id -Unique
+        )
+
+        if ($candidateProcesses.Count -eq 0) {
+            Write-Log 'Alt+F4 cancellation found no running Playnite Fullscreen process.'
+            return
+        }
+
+        foreach ($candidateProcess in $candidateProcesses) {
+            try {
+                $candidateProcess.Refresh()
+                if ($candidateProcess.HasExited) {
+                    continue
+                }
+
+                $processId = [int]$candidateProcess.Id
+                if ($candidateProcess.MainWindowHandle -ne [IntPtr]::Zero -and
+                    $candidateProcess.CloseMainWindow()) {
+                    Write-Log "Requested a graceful shutdown of Playnite Fullscreen PID $processId."
+                }
+                else {
+                    Write-Log "Playnite Fullscreen PID $processId has no closable main window yet; waiting briefly before termination." 'WARN'
+                }
+            }
+            catch {
+                Write-Log "Could not request a graceful Playnite Fullscreen shutdown: $($_.Exception.Message)" 'WARN'
+            }
+        }
+
+        $gracefulDeadline = [DateTime]::UtcNow.AddMilliseconds(1500)
+        do {
+            $runningProcesses = @()
+            foreach ($candidateProcess in $candidateProcesses) {
+                try {
+                    $candidateProcess.Refresh()
+                    if (-not $candidateProcess.HasExited) {
+                        $runningProcesses += $candidateProcess
+                    }
+                }
+                catch {
+                }
+            }
+
+            if ($runningProcesses.Count -eq 0 -or
+                [DateTime]::UtcNow -ge $gracefulDeadline) {
+                break
+            }
+
+            Start-Sleep -Milliseconds 100
+        } while ($true)
+
+        foreach ($candidateProcess in $runningProcesses) {
+            try {
+                $candidateProcess.Refresh()
+                if ($candidateProcess.HasExited) {
+                    continue
+                }
+
+                $processId = [int]$candidateProcess.Id
+                Write-Log "Playnite Fullscreen PID $processId did not exit gracefully; terminating it." 'WARN'
+                $candidateProcess.Kill()
+                [void]$candidateProcess.WaitForExit(1000)
+            }
+            catch {
+                Write-Log "Could not terminate Playnite Fullscreen: $($_.Exception.Message)" 'ERROR'
+            }
+        }
+    }
+
     $handleAltF4 = {
         if ($state.Closing -or $state.UserYieldedForeground) {
             return
         }
 
+        $state.BootCancelled = $true
+
+        if ($Mode -eq 'Host') {
+            Set-StreamingCancellation
+        }
+
         if ($state.LaunchStarted) {
-            Write-Log 'Alt+F4 received. Closing the boot overlay; Playnite continues independently.'
+            Write-Log 'Alt+F4 received. Cancelling the boot sequence and stopping Playnite Fullscreen.'
+            & $stopPlayniteFullscreen
         }
         else {
-            Write-Log 'Alt+F4 received. Closing the preload host before Playnite launch.'
+            Write-Log 'Alt+F4 received. Cancelling the boot sequence before Playnite launch.'
         }
 
         & $closeImmediately 0
+    }
+
+    $handleAltTab = {
+        & $yieldOverlayForAltTab
     }
 
     # Fallback quando l'overlay possiede direttamente il focus della tastiera.
@@ -1547,12 +1640,22 @@ public static class PlayniteBootNative
             $eventArgs.Key -eq [System.Windows.Input.Key]::F4
         )
 
-        if (-not $isAltF4) {
+        $isAltTab = $altPressed -and (
+            $eventArgs.Key -eq [System.Windows.Input.Key]::Tab -or
+            $eventArgs.SystemKey -eq [System.Windows.Input.Key]::Tab
+        )
+
+        if ($isAltTab) {
+            # Non impostiamo Handled: Windows deve completare normalmente
+            # il cambio applicazione richiesto dall'utente.
+            & $handleAltTab
             return
         }
 
-        $eventArgs.Handled = $true
-        & $handleAltF4
+        if ($isAltF4) {
+            $eventArgs.Handled = $true
+            & $handleAltF4
+        }
     })
 
     $installAltF4Hook = {
@@ -1581,6 +1684,10 @@ public static class PlayniteBootNative
                     $handled.Value = $true
                     & $handleAltF4
                 }
+                elseif ($message -eq [PlayniteBootNative]::WmPlayniteBootAltTab) {
+                    $handled.Value = $true
+                    & $handleAltTab
+                }
 
                 return [IntPtr]::Zero
             }
@@ -1591,14 +1698,14 @@ public static class PlayniteBootNative
             if (-not $installed) {
                 $source.RemoveHook($windowHook)
                 $errorCode = [PlayniteBootNative]::LastAltF4HookError
-                Write-Log "Alt+F4 keyboard hook installation failed with Win32 error $errorCode. The focused-window fallback remains active." 'WARN'
+                Write-Log "Alt+F4/Alt+Tab keyboard hook installation failed with Win32 error $errorCode. The focused-window fallback remains active." 'WARN'
                 return
             }
 
             $state.AltF4HookInstalled = $true
             $state.AltF4HookSource = $source
             $state.AltF4WindowHook = $windowHook
-            Write-Log 'Alt+F4 keyboard hook enabled for the active boot overlay.'
+            Write-Log 'Alt+F4 and Alt+Tab keyboard hook enabled for the active boot overlay.'
         }
         catch {
             try {
@@ -1607,7 +1714,7 @@ public static class PlayniteBootNative
             catch {
             }
 
-            Write-Log "Could not enable Alt+F4 support: $($_.Exception.Message)" 'WARN'
+            Write-Log "Could not enable Alt+F4/Alt+Tab support: $($_.Exception.Message)" 'WARN'
         }
     }
 
@@ -1682,8 +1789,6 @@ public static class PlayniteBootNative
         if ($state.Closing) {
             return
         }
-
-        & $yieldForegroundIfNeeded
 
         # Il segnale Stop viene usato solo per chiudere un host di preload che
         # non e riuscito o che non deve piu proseguire.
@@ -1950,11 +2055,18 @@ public static class PlayniteBootNative
         $trackedProcess = Get-RunningFullscreenProcess
     }
 
-    if ($state.WindowWasReady -and -not $state.UserYieldedForeground) {
+    if ($state.WindowWasReady -and
+        -not $state.UserYieldedForeground -and
+        -not $state.BootCancelled) {
         Activate-PlayniteWindow -Process $trackedProcess
     }
 
-    Write-Log "Launcher exited with code $($state.ExitCode). Playnite continues as an independent process."
+    if ($state.BootCancelled) {
+        Write-Log "Launcher exited with code $($state.ExitCode) after boot cancellation."
+    }
+    else {
+        Write-Log "Launcher exited with code $($state.ExitCode). Playnite continues as an independent process."
+    }
     exit ([int]$state.ExitCode)
 }
 catch {
