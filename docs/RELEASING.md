@@ -6,15 +6,20 @@ Update all version references:
 
 - `PlayniteBoot/extension.yaml`
 - `PlayniteBoot/Properties/AssemblyInfo.cs`
-- `PlayniteBoot/RuntimeTemplate/VERSION.txt` when the runtime changes
+- `PlayniteBoot/RuntimeTemplate/VERSION.txt` only when managed runtime files change
 - `CHANGELOG.md`
 - `RELEASE_NOTES.md`
 - `distribution/installer.yaml`
 
-Run:
+From the Visual Studio terminal, resolve and verify the manifest version:
 
 ```powershell
-.\scripts\verify-release.ps1 -Version 0.4.0
+$manifest = Get-Content .\PlayniteBoot\extension.yaml -Raw
+if ($manifest -notmatch '(?m)^Version:\s*(\d+\.\d+\.\d+)\s*$') {
+    throw 'Invalid extension version.'
+}
+$version = $Matches[1]
+.\scripts\verify-release.ps1 -Version $version
 ```
 
 ## 2. Build and package locally
@@ -25,21 +30,20 @@ Run:
 
 Playnite's Toolbox must be used for `.pext` packaging because it prepares the plugin package from the built extension directory.
 
-## 3. Push the repository
+## 3. Push the release branch
 
-For a new repository:
-
-```powershell
-.\scripts\publish-github.ps1
-```
-
-The script uses the current Git identity and GitHub CLI authentication.
+Commit the release changes, push the branch, open a pull request, and wait for CI to complete successfully. Merge the pull request into `main` only after the release checklist is complete.
 
 ## 4. Create the tag
 
+From an updated and clean `main` branch:
+
 ```powershell
-git tag -a v0.4.0 -m "Playnite Boot Screen 0.4.0"
-git push origin v0.4.0
+$manifest = Get-Content .\PlayniteBoot\extension.yaml -Raw
+$null = $manifest -match '(?m)^Version:\s*(\d+\.\d+\.\d+)\s*$'
+$version = $Matches[1]
+git tag -a "v$version" -m "Playnite Boot Screen $version"
+git push origin "v$version"
 ```
 
 The release workflow builds the plugin, installs Playnite on the Windows runner, packages with Toolbox, generates a SHA-256 file, and creates the GitHub release.

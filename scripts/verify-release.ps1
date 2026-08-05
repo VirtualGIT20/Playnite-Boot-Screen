@@ -6,9 +6,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'verify-source.ps1')
+
 $manifest = Get-Content -LiteralPath (Join-Path $root 'PlayniteBoot\extension.yaml') -Raw
 $assemblyInfo = Get-Content -LiteralPath (Join-Path $root 'PlayniteBoot\Properties\AssemblyInfo.cs') -Raw
 $installer = Get-Content -LiteralPath (Join-Path $root 'distribution\installer.yaml') -Raw
+$releaseNotes = Get-Content -LiteralPath (Join-Path $root 'RELEASE_NOTES.md') -Raw
+$changelog = Get-Content -LiteralPath (Join-Path $root 'CHANGELOG.md') -Raw
 
 $escapedVersion = [regex]::Escape($Version)
 $checks = @(
@@ -16,7 +20,9 @@ $checks = @(
     @{ Name = 'assembly version'; Pass = $assemblyInfo -match (('AssemblyVersion\("{0}\.0"\)') -f $escapedVersion) },
     @{ Name = 'assembly file version'; Pass = $assemblyInfo -match (('AssemblyFileVersion\("{0}\.0"\)') -f $escapedVersion) },
     @{ Name = 'installer manifest'; Pass = $installer -match (("(?m)^\s*- Version:\s*{0}\s*$") -f $escapedVersion) },
-    @{ Name = 'package URL'; Pass = $installer -match (('/v{0}/Playnite-Boot-Screen-v{0}\.pext') -f $escapedVersion) }
+    @{ Name = 'package URL'; Pass = $installer -match (('/v{0}/Playnite-Boot-Screen-v{0}\.pext') -f $escapedVersion) },
+    @{ Name = 'release notes'; Pass = $releaseNotes -match (("(?m)^# Playnite Boot Screen {0}\s*$") -f $escapedVersion) },
+    @{ Name = 'changelog'; Pass = $changelog -match (("(?m)^## \[{0}\]") -f $escapedVersion) }
 )
 
 $failed = @($checks | Where-Object { -not $_.Pass })

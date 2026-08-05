@@ -38,9 +38,24 @@ jobs:
             throw '.NET Framework 4.6.2 Targeting Pack is still unavailable.'
           }
 
+      - name: Resolve version from extension manifest
+        id: version
+        shell: powershell
+        run: |
+          $manifest = Get-Content -LiteralPath '.\PlayniteBoot\extension.yaml' -Raw
+          if ($manifest -notmatch '(?m)^Version:\s*(\d+\.\d+\.\d+)\s*$') {
+            throw 'Could not resolve a valid version from extension.yaml.'
+          }
+
+          "version=$($Matches[1])" |
+            Out-File `
+              -FilePath $env:GITHUB_OUTPUT `
+              -Append `
+              -Encoding utf8
+
       - name: Verify release metadata
         shell: powershell
-        run: .\scripts\verify-release.ps1 -Version 0.4.0
+        run: .\scripts\verify-release.ps1 -Version '${{ steps.version.outputs.version }}'
 
       - name: Build Release
         shell: powershell

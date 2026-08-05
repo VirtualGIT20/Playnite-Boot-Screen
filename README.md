@@ -33,7 +33,7 @@ The plugin targets .NET Framework 4.6.2 and Playnite SDK 6.16.0.
 
 ### Published package
 
-1. Download `Playnite-Boot-Screen-v0.4.0.pext` from the GitHub release.
+1. Download the latest `Playnite-Boot-Screen-v*.pext` file from the GitHub Releases page.
 2. Open the file and allow Playnite to install it.
 3. Restart Playnite.
 4. Open **Add-ons → Extension settings → Generic → Playnite Boot Screen**.
@@ -75,9 +75,10 @@ Persistent files are stored under Playnite's extension data directory:
 ```text
 %APPDATA%\Playnite\ExtensionsData\71b5c099-3c25-4fe7-b26f-1262c7f0e138\
 ├── Runtime\
-├── Media\
-├── Config\
-└── Logs\
+│   ├── config.json
+│   ├── media\
+│   └── logs\
+└── shortcut-state.json
 ```
 
 The extension installation directory can be safely replaced during updates without deleting custom media, configuration, or logs.

@@ -31,7 +31,7 @@ if ($LASTEXITCODE -eq 0) {
     $hasStagedChanges = $false
 }
 if ($hasStagedChanges) {
-    & git commit -m 'Initial public release 0.4.0'
+    & git commit -m 'Publish repository state'
     if ($LASTEXITCODE -ne 0) {
         throw 'Git commit failed. Configure user.name and user.email, then retry.'
     }

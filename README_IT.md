@@ -31,7 +31,7 @@ Il plugin usa .NET Framework 4.6.2 e Playnite SDK 6.16.0.
 
 ## Installazione
 
-1. Scarica `Playnite-Boot-Screen-v0.4.0.pext` dalla release GitHub.
+1. Scarica il file `Playnite-Boot-Screen-v*.pext` più recente dalla pagina Releases di GitHub.
 2. Apri il file e consenti a Playnite di installarlo.
 3. Riavvia Playnite.
 4. Apri **Componenti aggiuntivi → Impostazioni estensioni → Generico → Playnite Boot Screen**.
@@ -42,6 +42,17 @@ Per una build di sviluppo, chiudi Playnite ed esegui:
 .\scripts\install-dev.ps1 -Configuration Release
 ```
 
+## Avvio diretto
+
+In **Installazione e diagnostica**:
+
+1. scegli il nome del collegamento;
+2. seleziona **Crea/aggiorna collegamento Desktop** oppure **Crea/aggiorna collegamento Start**;
+3. chiudi completamente Playnite;
+4. avvia il nuovo collegamento.
+
+Il collegamento usa un bridge VBS nascosto, quindi non dovrebbe comparire alcuna console PowerShell.
+
 ## Streaming
 
 Abilita il preload nella scheda **Streaming** e copia:
@@ -50,6 +61,21 @@ Abilita il preload nella scheda **Streaming** e copia:
 2. **Detached command — Continue**.
 
 Non è richiesto un comando Undo. Consulta [Configurazione streaming](docs/STREAMING.md) per i dettagli.
+
+## Dati runtime
+
+I file persistenti vengono salvati nella directory dati dell’estensione:
+
+```text
+%APPDATA%\Playnite\ExtensionsData\71b5c099-3c25-4fe7-b26f-1262c7f0e138\
+├── Runtime\
+│   ├── config.json
+│   ├── media\
+│   └── logs\
+└── shortcut-state.json
+```
+
+La directory di installazione dell’estensione può essere sostituita senza eliminare video personalizzati, configurazione o log.
 
 ## Build e pacchetto
 

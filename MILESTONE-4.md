@@ -1,4 +1,4 @@
-# Milestone 4 — first public GitHub release
+# Milestone 4 (archived) — first public GitHub release
 
 Public name: **Playnite Boot Screen**  
 Author: **VirtualGIT20**  
@@ -29,4 +29,4 @@ This milestone converts the validated proof of concept into a public repository 
 - No verbose per-window diagnostic logging.
 - No global emergency hotkey.
 
-Use `docs/RELEASE_CHECKLIST.md` before tagging `v0.4.0`.
+This document is retained as the historical milestone for version 0.4.0.

@@ -13,6 +13,6 @@ Diagnostic steps:
 
 The extension intentionally continues to support switching from an already open Playnite Desktop instance to Fullscreen mode.
 
-## No emergency hotkey
+## Alt+F4 scope
 
-Version 0.4.0 does not register a global termination shortcut. See `docs/TROUBLESHOOTING.md` for recovery commands.
+Alt+F4 closes the active Playnite Boot Screen overlay. If Playnite has already been launched, Playnite continues independently. This is intentionally not a system-wide process termination shortcut.

@@ -15,7 +15,7 @@ namespace PlayniteBoot.Services
 
         private string BuildCommand(string mode)
         {
-            var command = $"powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File \"{paths.ScriptPath}\"";
+            var command = $"\"{WindowsPowerShell.ExecutablePath}\" -NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File \"{paths.ScriptPath}\"";
             return string.IsNullOrWhiteSpace(mode) ? command : $"{command} -Mode {mode}";
         }
     }

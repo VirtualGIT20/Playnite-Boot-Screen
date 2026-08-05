@@ -1,20 +1,24 @@
 # Troubleshooting
 
-## Recover from a persistent fullscreen black window
+## Close a persistent boot overlay
 
-Version 0.4.0 does not install a global emergency hotkey.
+Press **Alt+F4** while the Playnite Boot Screen overlay is active. If Playnite has already been launched, it continues independently.
 
-On the host PC, open PowerShell and run:
+If the overlay or host process is no longer responding, open PowerShell on the host PC and run:
 
 ```powershell
-Stop-Process -Name Playnite.FullscreenApp -Force -ErrorAction SilentlyContinue
-
 Get-CimInstance Win32_Process |
     Where-Object { $_.CommandLine -match 'PlayniteBoot\.ps1' } |
     ForEach-Object { Invoke-CimMethod -InputObject $_ -MethodName Terminate | Out-Null }
 ```
 
-This closes Playnite Fullscreen and any remaining Playnite Boot Screen runtime host. It does not terminate Playnite Desktop unless Desktop is itself switching or shutting down.
+To also close Playnite Fullscreen, run:
+
+```powershell
+Stop-Process -Name Playnite.FullscreenApp -Force -ErrorAction SilentlyContinue
+```
+
+These commands do not terminate Playnite Desktop unless Desktop is itself switching or shutting down.
 
 ## Logs
 
