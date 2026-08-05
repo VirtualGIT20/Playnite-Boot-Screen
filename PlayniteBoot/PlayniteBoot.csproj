@@ -27,8 +27,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -71,6 +71,7 @@
     <Compile Include="Services\RuntimePaths.cs" />
     <Compile Include="Services\ShellService.cs" />
     <Compile Include="Services\ShortcutService.cs" />
+    <Compile Include="Services\WindowsPowerShell.cs" />
   </ItemGroup>
 
   <ItemGroup>

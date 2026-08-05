@@ -11,6 +11,8 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      PLAYNITE_VERSION: '10.56'
 
     steps:
       - name: Check out repository
@@ -73,6 +75,7 @@ jobs:
           winget install `
             --id Playnite.Playnite `
             --exact `
+            --version $env:PLAYNITE_VERSION `
             --silent `
             --accept-package-agreements `
             --accept-source-agreements `
@@ -81,7 +84,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             Write-Warning 'WinGet installation failed; trying Chocolatey.'
 
-            choco install playnite -y --no-progress
+            choco install playnite --version=$env:PLAYNITE_VERSION -y --no-progress
 
             if ($LASTEXITCODE -ne 0) {
               throw "Playnite installation failed with exit code $LASTEXITCODE."
@@ -100,6 +103,7 @@ jobs:
             throw 'Playnite installed, but Toolbox.exe was not found.'
           }
 
+          Write-Host "Playnite version: $env:PLAYNITE_VERSION"
           Write-Host "Playnite Toolbox: $toolbox"
 
           "PLAYNITE_TOOLBOX=$toolbox" |
@@ -133,7 +137,7 @@ jobs:
           Write-Host "Package:  $package"
           Write-Host "Checksum: $checksum"
 
-      - name: Create or update GitHub release
+      - name: Create GitHub release
         shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
@@ -144,43 +148,20 @@ jobs:
           $checksum = "$package.sha256"
           $title = "Playnite Boot Screen $version"
 
-          # Check whether the release already exists.
           gh release view $tag *> $null
-          $releaseExists = $LASTEXITCODE -eq 0
-
-          if ($releaseExists) {
-            Write-Host "Release $tag already exists. Updating metadata and assets."
-
-            gh release edit $tag `
-              --title $title `
-              --notes-file RELEASE_NOTES.md
-
-            if ($LASTEXITCODE -ne 0) {
-              throw "Failed to update release $tag."
-            }
-
-            gh release upload $tag `
-              $package `
-              $checksum `
-              --clobber
-
-            if ($LASTEXITCODE -ne 0) {
-              throw "Failed to upload assets to release $tag."
-            }
+          if ($LASTEXITCODE -eq 0) {
+            throw "Release $tag already exists. Published release assets are not overwritten."
           }
-          else {
-            Write-Host "Creating release $tag."
 
-            gh release create $tag `
-              $package `
-              $checksum `
-              --title $title `
-              --notes-file RELEASE_NOTES.md `
-              --verify-tag
+          gh release create $tag `
+            $package `
+            $checksum `
+            --title $title `
+            --notes-file RELEASE_NOTES.md `
+            --verify-tag
 
-            if ($LASTEXITCODE -ne 0) {
-              throw "Failed to create release $tag."
-            }
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create release $tag."
           }
 
           Write-Host "Release $tag completed successfully."

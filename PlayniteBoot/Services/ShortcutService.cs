@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Web.Script.Serialization;
 
@@ -20,6 +21,13 @@ namespace PlayniteBoot.Services
 
     public class ShortcutService
     {
+        private static readonly string[] ReservedNames =
+        {
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        };
+
         private readonly RuntimePaths paths;
         private readonly JavaScriptSerializer serializer = new JavaScriptSerializer();
 
@@ -35,7 +43,12 @@ namespace PlayniteBoot.Services
                 throw new FileNotFoundException("LOCPlayniteBootErrorShortcutInstallerMissing".GetLocalized(), paths.ShortcutInstallerPath);
             }
 
-            var normalizedName = shortcutName.Trim();
+            var normalizedName = (shortcutName ?? string.Empty).Trim();
+            if (!TryGetShortcutPath(location, normalizedName, out var shortcutPath))
+            {
+                throw new ArgumentException("LOCPlayniteBootValidationShortcutCharacters".GetLocalized(), nameof(shortcutName));
+            }
+
             var state = LoadState();
             var previousName = location == ShortcutLocation.Desktop ? state.DesktopName : state.StartMenuName;
             if (!string.IsNullOrWhiteSpace(previousName) &&
@@ -47,7 +60,7 @@ namespace PlayniteBoot.Services
             var switchName = location == ShortcutLocation.Desktop ? "-Desktop" : "-StartMenu";
             var startInfo = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
+                FileName = WindowsPowerShell.ExecutablePath,
                 Arguments = string.Format(
                     "-NoLogo -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{0}\" {1}",
                     paths.ShortcutInstallerPath,
@@ -74,14 +87,20 @@ namespace PlayniteBoot.Services
                     throw new InvalidOperationException("LOCPlayniteBootErrorShortcutProcess".GetLocalized());
                 }
 
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                var errorTask = process.StandardError.ReadToEndAsync();
+
                 if (!process.WaitForExit(20000))
                 {
                     process.Kill();
+                    process.WaitForExit();
+                    outputTask.GetAwaiter().GetResult();
+                    errorTask.GetAwaiter().GetResult();
                     throw new TimeoutException("LOCPlayniteBootErrorShortcutTimeout".GetLocalized());
                 }
 
-                var output = process.StandardOutput.ReadToEnd();
-                var error = process.StandardError.ReadToEnd();
+                var output = outputTask.GetAwaiter().GetResult();
+                var error = errorTask.GetAwaiter().GetResult();
                 if (process.ExitCode != 0)
                 {
                     throw new InvalidOperationException(string.IsNullOrWhiteSpace(error) ? output : error);
@@ -98,7 +117,7 @@ namespace PlayniteBoot.Services
             }
 
             SaveState(state);
-            return GetShortcutPath(location, normalizedName);
+            return shortcutPath;
         }
 
         public bool Remove(ShortcutLocation location, string configuredName)
@@ -136,28 +155,69 @@ namespace PlayniteBoot.Services
             var state = LoadState();
             var managedName = location == ShortcutLocation.Desktop ? state.DesktopName : state.StartMenuName;
             var name = string.IsNullOrWhiteSpace(managedName) ? configuredName : managedName;
-            return !string.IsNullOrWhiteSpace(name) && File.Exists(GetShortcutPath(location, name.Trim()));
+            return TryGetShortcutPath(location, name, out var shortcutPath) && File.Exists(shortcutPath);
         }
 
-        private bool DeleteShortcutFile(ShortcutLocation location, string shortcutName)
+        private static bool DeleteShortcutFile(ShortcutLocation location, string shortcutName)
         {
-            var path = GetShortcutPath(location, shortcutName.Trim());
-            if (!File.Exists(path))
+            if (!TryGetShortcutPath(location, shortcutName, out var shortcutPath) || !File.Exists(shortcutPath))
             {
                 return false;
             }
 
-            File.Delete(path);
+            File.Delete(shortcutPath);
             return true;
         }
 
-        private static string GetShortcutPath(ShortcutLocation location, string shortcutName)
+        private static bool TryGetShortcutPath(ShortcutLocation location, string shortcutName, out string shortcutPath)
         {
+            shortcutPath = null;
+            var normalizedName = (shortcutName ?? string.Empty).Trim();
+            if (!IsValidShortcutName(normalizedName))
+            {
+                return false;
+            }
+
             var folder = location == ShortcutLocation.Desktop
                 ? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)
                 : Environment.GetFolderPath(Environment.SpecialFolder.Programs);
 
-            return Path.Combine(folder, shortcutName + ".lnk");
+            if (string.IsNullOrWhiteSpace(folder))
+            {
+                return false;
+            }
+
+            var canonicalFolder = Path.GetFullPath(folder)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var candidatePath = Path.GetFullPath(Path.Combine(canonicalFolder, normalizedName + ".lnk"));
+
+            if (!candidatePath.StartsWith(canonicalFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            shortcutPath = candidatePath;
+            return true;
+        }
+
+        private static bool IsValidShortcutName(string shortcutName)
+        {
+            if (string.IsNullOrWhiteSpace(shortcutName) || shortcutName.Length > 120)
+            {
+                return false;
+            }
+
+            if (Path.IsPathRooted(shortcutName) ||
+                !string.Equals(Path.GetFileName(shortcutName), shortcutName, StringComparison.Ordinal) ||
+                shortcutName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+                shortcutName.EndsWith(".", StringComparison.Ordinal) ||
+                shortcutName.EndsWith(" ", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var baseName = shortcutName.Split('.')[0].ToUpperInvariant();
+            return !ReservedNames.Contains(baseName, StringComparer.OrdinalIgnoreCase);
         }
 
         private ShortcutState LoadState()
@@ -182,27 +242,44 @@ namespace PlayniteBoot.Services
         {
             Directory.CreateDirectory(paths.PluginDataPath);
             var temp = paths.ShortcutStatePath + ".tmp";
-            File.WriteAllText(temp, serializer.Serialize(state), new UTF8Encoding(false));
 
-            if (File.Exists(paths.ShortcutStatePath))
+            try
             {
-                var backup = paths.ShortcutStatePath + ".bak";
-                if (File.Exists(backup))
-                {
-                    File.Delete(backup);
-                }
+                File.WriteAllText(temp, serializer.Serialize(state), new UTF8Encoding(false));
 
-                File.Replace(temp, paths.ShortcutStatePath, backup, true);
-                if (File.Exists(backup))
+                if (File.Exists(paths.ShortcutStatePath))
                 {
-                    File.Delete(backup);
+                    var backup = paths.ShortcutStatePath + ".bak";
+                    if (File.Exists(backup))
+                    {
+                        File.Delete(backup);
+                    }
+
+                    File.Replace(temp, paths.ShortcutStatePath, backup, true);
+                    if (File.Exists(backup))
+                    {
+                        File.Delete(backup);
+                    }
+                }
+                else
+                {
+                    File.Move(temp, paths.ShortcutStatePath);
                 }
             }
-            else
+            finally
             {
-                File.Move(temp, paths.ShortcutStatePath);
+                try
+                {
+                    if (File.Exists(temp))
+                    {
+                        File.Delete(temp);
+                    }
+                }
+                catch
+                {
+                    // Preserve the original save result or exception.
+                }
             }
         }
-
     }
 }
