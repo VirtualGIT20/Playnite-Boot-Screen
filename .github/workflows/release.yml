@@ -69,48 +69,101 @@ jobs:
           .\scripts\verify-release.ps1 `
             -Version '${{ steps.version.outputs.version }}'
 
-      - name: Install Playnite for Toolbox
+      - name: Download Playnite Toolbox runtime
         shell: powershell
         run: |
-          winget install `
-            --id Playnite.Playnite `
-            --exact `
-            --version $env:PLAYNITE_VERSION `
-            --silent `
-            --accept-package-agreements `
-            --accept-source-agreements `
-            --disable-interactivity
+          $archivePath = Join-Path `
+            $env:RUNNER_TEMP `
+            "Playnite-$env:PLAYNITE_VERSION.7z"
 
-          if ($LASTEXITCODE -ne 0) {
-            Write-Warning 'WinGet installation failed; trying Chocolatey.'
+          $extractPath = Join-Path `
+            $env:RUNNER_TEMP `
+            "Playnite-$env:PLAYNITE_VERSION"
 
-            choco install playnite --version=$env:PLAYNITE_VERSION -y --no-progress
+          $downloadUrl = `
+            "https://github.com/JosefNemec/Playnite/releases/download/$env:PLAYNITE_VERSION/$env:PLAYNITE_VERSION.7z"
+
+          $sevenZip = @(
+            (Join-Path $env:ProgramFiles '7-Zip\7z.exe')
+            (Join-Path ${env:ProgramFiles(x86)} '7-Zip\7z.exe')
+          ) |
+            Where-Object {
+              $_ -and (Test-Path -LiteralPath $_ -PathType Leaf)
+            } |
+            Select-Object -First 1
+
+          if (-not $sevenZip) {
+            choco install 7zip -y --no-progress
 
             if ($LASTEXITCODE -ne 0) {
-              throw "Playnite installation failed with exit code $LASTEXITCODE."
+              throw "7-Zip installation failed with exit code $LASTEXITCODE."
             }
+
+            $sevenZip = Join-Path $env:ProgramFiles '7-Zip\7z.exe'
           }
 
-          $toolbox = @(
-            (Join-Path $env:LOCALAPPDATA 'Playnite\Toolbox.exe'),
-            (Join-Path $env:ProgramFiles 'Playnite\Toolbox.exe'),
-            (Join-Path ${env:ProgramFiles(x86)} 'Playnite\Toolbox.exe')
-          ) |
-            Where-Object { Test-Path -LiteralPath $_ } |
+          if (-not (Test-Path -LiteralPath $sevenZip -PathType Leaf)) {
+            throw '7z.exe was not found.'
+          }
+
+          Remove-Item `
+            -LiteralPath $archivePath `
+            -Force `
+            -ErrorAction SilentlyContinue
+
+          Remove-Item `
+            -LiteralPath $extractPath `
+            -Recurse `
+            -Force `
+            -ErrorAction SilentlyContinue
+
+          Write-Host "Downloading Playnite $env:PLAYNITE_VERSION..."
+
+          Invoke-WebRequest `
+            -Uri $downloadUrl `
+            -OutFile $archivePath `
+            -UseBasicParsing
+
+          New-Item `
+            -Path $extractPath `
+            -ItemType Directory `
+            -Force |
+            Out-Null
+
+          & $sevenZip x $archivePath "-o$extractPath" -y
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Playnite archive extraction failed with exit code $LASTEXITCODE."
+          }
+
+          $toolbox = Get-ChildItem `
+            -LiteralPath $extractPath `
+            -Filter 'Toolbox.exe' `
+            -File `
+            -Recurse |
             Select-Object -First 1
 
           if (-not $toolbox) {
-            throw 'Playnite installed, but Toolbox.exe was not found.'
+            throw 'Toolbox.exe was not found in the Playnite archive.'
+          }
+
+          $nlog = Join-Path `
+            $toolbox.Directory.FullName `
+            'NLog.dll'
+
+          if (-not (Test-Path -LiteralPath $nlog -PathType Leaf)) {
+            throw "NLog.dll was not found next to Toolbox.exe: $($toolbox.Directory.FullName)"
           }
 
           Write-Host "Playnite version: $env:PLAYNITE_VERSION"
-          Write-Host "Playnite Toolbox: $toolbox"
+          Write-Host "Playnite Toolbox: $($toolbox.FullName)"
+          Write-Host "Toolbox NLog: $nlog"
 
-          "PLAYNITE_TOOLBOX=$toolbox" |
+          "PLAYNITE_TOOLBOX=$($toolbox.FullName)" |
             Out-File `
               -FilePath $env:GITHUB_ENV `
               -Append `
-              -Encoding utf8
+              -Encoding utf8 
 
       - name: Build and package
         shell: powershell
