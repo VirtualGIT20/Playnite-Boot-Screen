@@ -22,19 +22,6 @@ Stop-Process -Name Playnite.FullscreenApp -Force -ErrorAction SilentlyContinue
 
 These commands do not terminate Playnite Desktop unless Desktop is itself switching or shutting down.
 
-## Black screen after the overlay fades
-
-A Playnite Fullscreen theme can create a fullscreen window but fail to render visible content on a physical or virtual display. This can look like a frozen boot overlay even when Playnite Boot Screen has already exited normally.
-
-Diagnostic steps:
-
-1. Repeat the launch with Playnite's default Fullscreen theme.
-2. Check `%APPDATA%\Playnite\playnite.log` and `%APPDATA%\Playnite\extensions.log`.
-3. Open the Playnite Boot Screen runtime log from **Installation and diagnostics → Open logs**.
-4. Check whether the runtime log contains `Launcher exited with code 0`.
-
-When the launcher exits successfully, investigate the active Fullscreen theme, virtual-display configuration, and Playnite rendering logs before treating the boot overlay as the cause.
-
 ## Logs
 
 Playnite logs:

@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-08-05
     PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.5.0/Playnite-Boot-Screen-v0.5.0.pext
     Changelog:
-      - First stable public release of Playnite Boot Screen.
+      - First public release of Playnite Boot Screen.
       - English 4K60 default boot video with configurable custom media.
       - Direct shortcuts and Sunshine/Apollo-compatible streaming preload.
       - Alt+F4 cancels the boot sequence and stops the Playnite Fullscreen process started by it.
