@@ -8,7 +8,10 @@
 - [ ] Direct cold launch succeeds.
 - [ ] Launch while Playnite Desktop is already open switches to Fullscreen successfully.
 - [ ] Wait-for-video-end mode succeeds.
-- [ ] Alt+F4 closes the overlay and leaves an already launched Playnite session running.
+- [ ] Alt+F4 closes the overlay and stops the Playnite Fullscreen process started by the boot sequence.
+- [ ] Alt+F4 during Preload prevents a later Continue command from using the standalone fallback.
+- [ ] Alt+Tab yields the overlay, restores the cursor, and does not cancel Playnite startup.
+- [ ] Automatic foreground changes from Terminal, Explorer, Sunshine, or Apollo do not reveal the cursor or disable Alt+F4.
 - [ ] Streaming Preload and Continue succeed on the target virtual display.
 - [ ] Desktop and Start shortcuts can be created, renamed, and removed.
 - [ ] Invalid or modified shortcut state cannot escape the Desktop or Start menu directories.

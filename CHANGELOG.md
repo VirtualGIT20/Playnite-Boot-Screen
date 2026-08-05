@@ -7,7 +7,8 @@ All notable changes are documented here. Versions follow the Playnite extension 
 ### Added
 
 - English 4K60 default boot video and matching documentation preview.
-- Alt+F4 handling for closing the boot overlay without terminating an already launched Playnite session.
+- Alt+F4 cancellation for closing the boot overlay and stopping the Playnite Fullscreen process started by the current boot sequence.
+- Explicit Alt+Tab handling that yields the overlay without relying on foreground-window polling.
 
 ### Changed
 
@@ -15,6 +16,12 @@ All notable changes are documented here. Versions follow the Playnite extension 
 - Build output is cleaned before compilation and packaging uses an isolated temporary directory.
 - Release packages no longer include PDB files.
 - CI resolves the extension version from `extension.yaml`.
+
+### Fixed
+
+- The mouse cursor no longer becomes visible when a terminal, launcher, or streaming client temporarily receives foreground during Prep/Continue.
+- Alt+F4 remains available throughout streaming preload and launch, including when another process temporarily owns foreground.
+- Cancelling a preload before Continue no longer triggers the standalone fallback and relaunches Playnite.
 
 ### Security
 
