@@ -1,12 +1,12 @@
 AddonId: PlayniteBoot_71b5c099-3c25-4fe7-b26f-1262c7f0e138
 Packages:
-  - Version: 0.4.0
+  - Version: 0.5.0
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-08-04
-    PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.4.0/Playnite-Boot-Screen-v0.4.0.pext
+    ReleaseDate: 2026-08-05
+    PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.5.0/Playnite-Boot-Screen-v0.5.0.pext
     Changelog:
-      - First public preview under the name Playnite Boot Screen.
-      - Custom boot video, direct shortcuts, and Sunshine/Apollo-compatible streaming preload.
-      - English and Italian localization.
-      - Optional wait for the natural end of the video.
-      - Runtime logs capped at 2 MiB with one backup.
+      - First public release of Playnite Boot Screen.
+      - English 4K60 default boot video with configurable custom media.
+      - Direct shortcuts and Sunshine/Apollo-compatible streaming preload.
+      - Alt+F4 closes the overlay without terminating an already launched Playnite session.
+      - Hardened shortcut handling, deterministic packaging, and English/Italian localization.
