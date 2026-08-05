@@ -201,10 +201,27 @@ jobs:
           $checksum = "$package.sha256"
           $title = "Playnite Boot Screen $version"
 
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) {
-            throw "Release $tag already exists. Published release assets are not overwritten."
-          }
+          $releaseListJson = (
+          gh release list `
+          --limit 100 `
+          --json tagName
+          ) -join "`n"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to query the existing GitHub releases.'
+           }
+
+          $existingReleases = @(
+          $releaseListJson |
+          ConvertFrom-Json |
+          Where-Object {
+          $_.tagName -eq $tag
+            }
+          )
+
+          if ($existingReleases.Count -gt 0) {
+          throw "Release $tag already exists. Published release assets are not overwritten."
+            }
 
           gh release create $tag `
             $package `
