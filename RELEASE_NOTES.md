@@ -1,6 +1,6 @@
 # Playnite Boot Screen 0.5.0
 
-First public release of Playnite Boot Screen.
+First stable public release of Playnite Boot Screen.
 
 Highlights:
 
