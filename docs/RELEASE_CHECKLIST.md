@@ -1,4 +1,4 @@
-# Release checklist — 0.5.0
+# Release checklist — 0.6.0
 
 ## Code and behavior
 
@@ -13,6 +13,12 @@
 - [ ] Alt+Tab yields the overlay, restores the cursor, and does not cancel Playnite startup.
 - [ ] Automatic foreground changes from Terminal, Explorer, Sunshine, or Apollo do not reveal the cursor or disable Alt+F4.
 - [ ] Streaming Preload and Continue succeed on the target virtual display.
+- [ ] Follow Playnite selects the primary display when Playnite uses its primary-display option.
+- [ ] Follow Playnite selects Playnite's configured secondary display when primary-display mode is disabled.
+- [ ] Missing, invalid, or stale Playnite display settings fall back without stopping the launcher.
+- [ ] Playnite readiness is detected when the overlay and Playnite Fullscreen are on different monitors.
+- [ ] The standard video folder list refreshes, ignores subfolders, and keeps external video paths supported.
+- [ ] Standard-folder videos are written to `config.json` as relative `.\media\...` paths.
 - [ ] Desktop and Start shortcuts can be created, renamed, and removed.
 - [ ] Invalid or modified shortcut state cannot escape the Desktop or Start menu directories.
 - [ ] Runtime log rotates to `PlayniteBoot.log.1` after 2 MiB.
@@ -27,7 +33,7 @@
 
 ## Packaging
 
-- [ ] `scripts/verify-release.ps1 -Version 0.5.0` succeeds.
+- [ ] `scripts/verify-release.ps1 -Version 0.6.0` succeeds.
 - [ ] `scripts/pack.ps1 -Configuration Release` creates exactly one expected `.pext`.
 - [ ] Build and package contain no `.pdb`, source, temporary, or stale files.
 - [ ] SHA-256 file matches the package.
@@ -39,7 +45,7 @@
 - [ ] Repository description, topics, and license are set.
 - [ ] Private vulnerability reporting is enabled.
 - [ ] CI workflow succeeds.
-- [ ] Tag `v0.5.0` creates a release with `.pext` and checksum.
+- [ ] Tag `v0.6.0` creates a release with `.pext` and checksum.
 - [ ] Release notes mention the theme-related black-screen diagnostic.
 
 ## Playnite add-on database

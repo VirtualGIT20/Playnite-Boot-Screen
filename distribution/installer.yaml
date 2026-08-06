@@ -1,5 +1,15 @@
 AddonId: PlayniteBoot_71b5c099-3c25-4fe7-b26f-1262c7f0e138
 Packages:
+  - Version: 0.6.0
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-08-06
+    PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.6.0/Playnite-Boot-Screen-v0.6.0.pext
+    Changelog:
+      - Follow Playnite Fullscreen display settings with a safe manual fallback.
+      - Detect the ready Fullscreen window on any connected monitor.
+      - Add a managed video library for the standard Runtime media folder while keeping external files supported.
+      - Replace the extension icon with a language-neutral design.
+
   - Version: 0.5.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-05

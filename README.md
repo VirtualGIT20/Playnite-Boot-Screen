@@ -12,7 +12,9 @@ It also supports a generic streaming preload flow for Sunshine, Apollo, Vibeshin
 
 ## Features
 
-- Custom video file, monitor, scaling, fades, mute, and volume from 0 to 100.
+- Managed video list for supported files in the persistent runtime media folder, while external video paths remain supported.
+- Follow Playnite's Fullscreen display setting or choose a monitor manually, with safe multi-monitor readiness detection.
+- Configurable scaling, fades, mute, and volume from 0 to 100.
 - Reveal Playnite as soon as it is ready, or wait for the video to end naturally.
 - Managed runtime stored outside the replaceable extension installation directory.
 - Configurable Desktop and Start menu shortcut name.
@@ -82,6 +84,8 @@ Persistent files are stored under Playnite's extension data directory:
 ```
 
 The extension installation directory can be safely replaced during updates without deleting custom media, configuration, or logs.
+
+Place `.mp4`, `.mkv`, `.webm`, `.avi`, or `.mov` files directly in `Runtime\media`, then use **Refresh list** in the settings page. Files outside this folder can still be selected with **Browse external…**.
 
 ## Build
 
