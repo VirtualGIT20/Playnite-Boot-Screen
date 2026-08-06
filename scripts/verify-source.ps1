@@ -72,7 +72,10 @@ $runtimeBehaviorChecks = @(
     @{ Name = 'explicit Alt+Tab hook'; Pass = $runtimeScript -match 'WmPlayniteBootAltTab' },
     @{ Name = 'streaming cancellation guard'; Pass = $runtimeScript -match 'streaming-cancelled\.flag' },
     @{ Name = 'Playnite Fullscreen cancellation'; Pass = $runtimeScript -match '\$stopPlayniteFullscreen' },
-    @{ Name = 'foreground polling removed'; Pass = $runtimeScript -notmatch '\$yieldForegroundIfNeeded' }
+    @{ Name = 'foreground polling removed'; Pass = $runtimeScript -notmatch '\$yieldForegroundIfNeeded' },
+    @{ Name = 'Playnite monitor following'; Pass = $runtimeScript -match 'fullscreenConfig\.json' },
+    @{ Name = 'monitor fallback'; Pass = $runtimeScript -match 'MonitorFallback' },
+    @{ Name = 'cross-monitor readiness'; Pass = $runtimeScript -match 'largest intersection area|bestIntersectionArea' }
 )
 
 $failedRuntimeBehaviorChecks = @($runtimeBehaviorChecks | Where-Object { -not $_.Pass })
@@ -81,7 +84,27 @@ foreach ($check in $runtimeBehaviorChecks) {
 }
 
 if ($failedRuntimeBehaviorChecks.Count -gt 0) {
-    throw 'Required input and cancellation behavior is missing from the runtime script.'
+    throw 'Required runtime behavior is missing from the runtime script.'
+}
+
+Write-Host 'Checking managed video library integration...'
+$videoLibraryPath = Join-Path $root 'PlayniteBoot\Services\VideoLibraryService.cs'
+$configWriterPath = Join-Path $root 'PlayniteBoot\Services\RuntimeConfigWriter.cs'
+$settingsViewPath = Join-Path $root 'PlayniteBoot\PlayniteBootSettingsView.xaml'
+foreach ($requiredPath in @($videoLibraryPath, $configWriterPath, $settingsViewPath)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw "Required video library file not found: $requiredPath"
+    }
+}
+
+$videoLibrarySource = Get-Content -LiteralPath $videoLibraryPath -Raw -Encoding UTF8
+$configWriterSource = Get-Content -LiteralPath $configWriterPath -Raw -Encoding UTF8
+$settingsViewSource = Get-Content -LiteralPath $settingsViewPath -Raw -Encoding UTF8
+if ($videoLibrarySource -notmatch 'SearchOption\.TopDirectoryOnly' -or
+    $videoLibrarySource -notmatch '\.mp4' -or
+    -not $configWriterSource.Contains('return @".\media\"') -or
+    $settingsViewSource -notmatch 'RefreshVideoLibraryCommand') {
+    throw 'Managed video library integration is incomplete.'
 }
 
 $videoPath = Join-Path $root 'PlayniteBoot\RuntimeTemplate\media\boot-4k60.mp4'

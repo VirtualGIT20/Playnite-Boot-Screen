@@ -5,13 +5,14 @@ namespace PlayniteBoot.Models
 {
     public class PlayniteBootSettingsData : ObservableObject
     {
-        public const int CurrentSettingsVersion = 1;
+        public const int CurrentSettingsVersion = 2;
 
         private int settingsVersion;
         private string playniteExecutable = "auto";
         private string launchArguments = "--hidesplashscreen";
         private string videoPath = string.Empty;
-        private string monitor = "auto";
+        private string monitor = "playnite";
+        private string monitorFallback = "primary";
         private string videoStretch = "UniformToFill";
         private bool loopVideo;
         private bool waitForVideoEnd;
@@ -43,6 +44,7 @@ namespace PlayniteBoot.Models
         public string LaunchArguments { get => launchArguments; set => SetValue(ref launchArguments, value); }
         public string VideoPath { get => videoPath; set => SetValue(ref videoPath, value); }
         public string Monitor { get => monitor; set => SetValue(ref monitor, value); }
+        public string MonitorFallback { get => monitorFallback; set => SetValue(ref monitorFallback, value); }
         public string VideoStretch { get => videoStretch; set => SetValue(ref videoStretch, value); }
         public bool LoopVideo { get => loopVideo; set => SetValue(ref loopVideo, value); }
 

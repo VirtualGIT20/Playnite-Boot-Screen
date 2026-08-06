@@ -50,8 +50,8 @@ Write-Host "Config version: $configVersion"
 if ($legacyStreaming) {
     Write-Warning 'Legacy vibepollo section detected. Save settings in the extension to migrate to streaming.'
 }
-if ($configVersion -gt 1) {
-    Write-Warning "Config version $configVersion is newer than the supported version 1."
+if ($configVersion -gt 2) {
+    Write-Warning "Config version $configVersion is newer than the supported version 2."
 }
 
 Write-Host ''
@@ -59,6 +59,8 @@ Write-Host 'GENERAL SETTINGS' -ForegroundColor Cyan
 Write-Host "Folder:         $scriptDirectory"
 Write-Host "Video:          $(Resolve-LocalPath ([string]$config.videoPath))"
 Write-Host "Monitor:        $($config.monitor)"
+Write-Host "Monitor fallback: $(Get-PropertyValue $config 'monitorFallback' 'primary')"
+Write-Host "Playnite config:  $(Get-PropertyValue $config 'playniteConfigurationPath' '')"
 Write-Host "Arguments:      $($config.launchArguments)"
 $loopVideo = [bool](Get-PropertyValue $config 'loopVideo' $false)
 $waitForVideoEnd = [bool](Get-PropertyValue $config 'waitForVideoEnd' $false)
@@ -70,7 +72,7 @@ Write-Host "Ready timeout:  $($config.videoReadyTimeoutMilliseconds) ms"
 Write-Host "Fade-in:        $($config.fadeInMilliseconds) ms"
 Write-Host "Fade-out:       $($config.fadeOutMilliseconds) ms"
 Write-Host "Stability:      $($config.readyStabilityMilliseconds) ms"
-Write-Host 'Coverage:       at least 85% of the selected monitor (internal threshold)'
+Write-Host 'Coverage:       at least 85% of the monitor actually occupied by Playnite (internal threshold)'
 
 if ($loopVideo -and $waitForVideoEnd) {
     Write-Warning 'Invalid configuration: loopVideo and waitForVideoEnd cannot both be enabled.'
@@ -131,7 +133,7 @@ else {
         Write-Warning "Unsupported fallbackMode: $fallbackMode. Use 'standalone'."
     }
 
-    $validMonitor = $monitor -match '^(?i:inherit|auto|cursor|primary|client|clientResolution|index:\d+)$'
+    $validMonitor = $monitor -match '^(?i:inherit|auto|cursor|primary|playnite|followPlaynite|client|clientResolution|index:\d+)$'
     if (-not $validMonitor) {
         Write-Warning "Unrecognized streaming.monitor value: $monitor"
     }

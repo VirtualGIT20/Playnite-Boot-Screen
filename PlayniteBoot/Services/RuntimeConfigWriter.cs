@@ -9,19 +9,22 @@ namespace PlayniteBoot.Services
 {
     public class RuntimeConfigWriter
     {
-        public const int CurrentConfigVersion = 1;
+        public const int CurrentConfigVersion = 2;
 
         private readonly RuntimePaths paths;
+        private readonly string playniteConfigurationPath;
         private readonly JavaScriptSerializer serializer = new JavaScriptSerializer();
 
-        public RuntimeConfigWriter(RuntimePaths paths)
+        public RuntimeConfigWriter(RuntimePaths paths, string playniteConfigurationPath)
         {
             this.paths = paths;
+            this.playniteConfigurationPath = playniteConfigurationPath ?? string.Empty;
         }
 
         public void Write(PlayniteBootSettingsData settings)
         {
             Directory.CreateDirectory(paths.RuntimeDirectory);
+            Directory.CreateDirectory(paths.MediaDirectory);
             Directory.CreateDirectory(paths.LogsDirectory);
 
             var videoPath = NormalizeVideoPath(settings.VideoPath);
@@ -52,13 +55,22 @@ namespace PlayniteBoot.Services
 
         private string NormalizeVideoPath(string configuredPath)
         {
-            if (string.IsNullOrWhiteSpace(configuredPath) ||
-                string.Equals(Path.GetFullPath(configuredPath), Path.GetFullPath(paths.DefaultVideoPath), StringComparison.OrdinalIgnoreCase))
+            var fullPath = string.IsNullOrWhiteSpace(configuredPath)
+                ? Path.GetFullPath(paths.DefaultVideoPath)
+                : Path.GetFullPath(configuredPath);
+
+            var mediaRoot = Path.GetFullPath(paths.MediaDirectory)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) +
+                Path.DirectorySeparatorChar;
+
+            if (fullPath.StartsWith(mediaRoot, StringComparison.OrdinalIgnoreCase))
             {
-                return @".\media\boot-4k60.mp4";
+                var relativeName = fullPath.Substring(mediaRoot.Length)
+                    .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                return @".\media\" + relativeName;
             }
 
-            return Path.GetFullPath(configuredPath);
+            return fullPath;
         }
 
         private string BuildJson(PlayniteBootSettingsData s, string videoPath)
@@ -69,9 +81,11 @@ namespace PlayniteBoot.Services
             b.AppendLine("{");
             Append(b, "configVersion", CurrentConfigVersion, true);
             Append(b, "playniteExecutable", s.PlayniteExecutable, true);
+            Append(b, "playniteConfigurationPath", playniteConfigurationPath, true);
             Append(b, "launchArguments", s.LaunchArguments, true);
             Append(b, "videoPath", videoPath, true);
             Append(b, "monitor", s.Monitor, true);
+            Append(b, "monitorFallback", s.MonitorFallback, true);
             Append(b, "videoStretch", s.VideoStretch, true);
             Append(b, "loopVideo", s.LoopVideo, true);
             Append(b, "waitForVideoEnd", s.WaitForVideoEnd, true);

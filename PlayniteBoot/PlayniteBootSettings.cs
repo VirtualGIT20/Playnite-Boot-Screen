@@ -4,6 +4,7 @@ using PlayniteBoot.Models;
 using PlayniteBoot.Services;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -18,6 +19,7 @@ namespace PlayniteBoot
     public class PlayniteBootSettingsViewModel : ObservableObject, ISettings
     {
         private readonly PlayniteBootPlugin plugin;
+        private readonly VideoLibraryService videoLibrary;
         private PlayniteBootSettingsData editingClone;
         private PlayniteBootSettingsData settings;
         private string runtimeStatus;
@@ -45,6 +47,13 @@ namespace PlayniteBoot
                 OnPropertyChanged(nameof(IsMinimumVideoDurationEnabled));
                 OnPropertyChanged(nameof(IsVolumeEnabled));
                 OnPropertyChanged(nameof(VolumePercent));
+                OnPropertyChanged(nameof(SelectedVideoPath));
+                OnPropertyChanged(nameof(SelectedVideoPathDisplay));
+
+                if (videoLibrary != null)
+                {
+                    RefreshVideoLibrary(false);
+                }
             }
         }
 
@@ -53,6 +62,29 @@ namespace PlayniteBoot
             get => runtimeStatus;
             private set => SetValue(ref runtimeStatus, value);
         }
+
+        public ObservableCollection<VideoOption> VideoOptions { get; } = new ObservableCollection<VideoOption>();
+
+        public string SelectedVideoPath
+        {
+            get => Settings == null ? string.Empty : GetConfiguredVideoPath();
+            set
+            {
+                if (Settings == null || string.IsNullOrWhiteSpace(value) ||
+                    PathsEqual(Settings.VideoPath, value))
+                {
+                    return;
+                }
+
+                Settings.VideoPath = Path.GetFullPath(value);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedVideoPathDisplay));
+            }
+        }
+
+        public string SelectedVideoPathDisplay => Settings == null
+            ? string.Empty
+            : GetConfiguredVideoPath();
 
         public bool IsLoopVideoEnabled => Settings == null || !Settings.WaitForVideoEnd;
         public bool IsMinimumVideoDurationEnabled => Settings == null || !Settings.WaitForVideoEnd;
@@ -87,6 +119,8 @@ namespace PlayniteBoot
         public List<LocalizedOption> FallbackOptions { get; }
 
         public RelayCommand BrowseVideoCommand { get; }
+        public RelayCommand RefreshVideoLibraryCommand { get; }
+        public RelayCommand OpenVideoFolderCommand { get; }
         public RelayCommand RestoreDefaultVideoCommand { get; }
         public RelayCommand ResetSettingsCommand { get; }
         public RelayCommand InstallRuntimeCommand { get; }
@@ -104,6 +138,7 @@ namespace PlayniteBoot
         public PlayniteBootSettingsViewModel(PlayniteBootPlugin plugin)
         {
             this.plugin = plugin;
+            videoLibrary = new VideoLibraryService(plugin.Paths);
             Settings = plugin.LoadPluginSettings<PlayniteBootSettingsData>() ?? PlayniteBootSettingsData.CreateDefault();
 
             GeneralMonitorOptions = BuildMonitorOptions(false);
@@ -122,6 +157,8 @@ namespace PlayniteBoot
             };
 
             BrowseVideoCommand = new RelayCommand(BrowseVideo);
+            RefreshVideoLibraryCommand = new RelayCommand(() => RefreshVideoLibrary(true));
+            OpenVideoFolderCommand = new RelayCommand(() => ExecuteAction(OpenVideoFolder));
             RestoreDefaultVideoCommand = new RelayCommand(RestoreDefaultVideo);
             ResetSettingsCommand = new RelayCommand(ResetSettings);
             InstallRuntimeCommand = new RelayCommand(() => ExecuteAction(InstallRuntime));
@@ -136,12 +173,14 @@ namespace PlayniteBoot
             OpenRuntimeFolderCommand = new RelayCommand(() => ExecuteAction(() => ShellService.OpenFolder(plugin.Paths.RuntimeDirectory)));
             OpenLogsFolderCommand = new RelayCommand(() => ExecuteAction(() => ShellService.OpenFolder(plugin.Paths.LogsDirectory)));
 
+            RefreshVideoLibrary(false);
             RefreshRuntimeStatus();
         }
 
         public void BeginEdit()
         {
             editingClone = Serialization.GetClone(Settings);
+            RefreshVideoLibrary(false);
             RefreshRuntimeStatus();
         }
 
@@ -155,6 +194,10 @@ namespace PlayniteBoot
         {
             Settings.SettingsVersion = PlayniteBootSettingsData.CurrentSettingsVersion;
             Settings.ShortcutName = (Settings.ShortcutName ?? string.Empty).Trim();
+            if (IsManualMonitorSelection(Settings.Monitor))
+            {
+                Settings.MonitorFallback = Settings.Monitor;
+            }
             plugin.SavePluginSettings(Settings);
             plugin.PrepareRuntime(Settings, false);
             RefreshRuntimeStatus();
@@ -219,6 +262,23 @@ namespace PlayniteBoot
 
         private void SettingsPropertyChanged(object sender, PropertyChangedEventArgs eventArgs)
         {
+            if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.VideoPath))
+            {
+                OnPropertyChanged(nameof(SelectedVideoPath));
+                OnPropertyChanged(nameof(SelectedVideoPathDisplay));
+                return;
+            }
+
+            if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.Monitor))
+            {
+                if (IsManualMonitorSelection(Settings.Monitor))
+                {
+                    Settings.MonitorFallback = Settings.Monitor;
+                }
+
+                return;
+            }
+
             if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.Mute))
             {
                 OnPropertyChanged(nameof(IsVolumeEnabled));
@@ -265,7 +325,7 @@ namespace PlayniteBoot
                 settings.Streaming = new StreamingSettings();
             }
 
-            if (settings.SettingsVersion < PlayniteBootSettingsData.CurrentSettingsVersion)
+            if (settings.SettingsVersion < 1)
             {
                 // M2 stored mute=true and volume=0 by default. Preserve explicit
                 // unmuted silence, but make the first unmute useful for old users.
@@ -273,9 +333,16 @@ namespace PlayniteBoot
                 {
                     settings.Volume = 1.0;
                 }
-
-                settings.SettingsVersion = PlayniteBootSettingsData.CurrentSettingsVersion;
             }
+
+            if (settings.SettingsVersion < 2 && IsManualMonitorSelection(settings.Monitor))
+            {
+                // Preserve the user's previous monitor choice as the fallback if
+                // Follow Playnite is selected later.
+                settings.MonitorFallback = settings.Monitor;
+            }
+
+            settings.SettingsVersion = PlayniteBootSettingsData.CurrentSettingsVersion;
 
             if (string.IsNullOrWhiteSpace(settings.VideoPath))
             {
@@ -294,11 +361,16 @@ namespace PlayniteBoot
 
             if (string.IsNullOrWhiteSpace(settings.Monitor))
             {
-                settings.Monitor = "auto";
+                settings.Monitor = "playnite";
             }
             else if (string.Equals(settings.Monitor, "cursor", StringComparison.OrdinalIgnoreCase))
             {
                 settings.Monitor = "auto";
+            }
+
+            if (!IsManualMonitorSelection(settings.MonitorFallback))
+            {
+                settings.MonitorFallback = "primary";
             }
 
             if (string.IsNullOrWhiteSpace(settings.Streaming.Monitor))
@@ -358,6 +430,11 @@ namespace PlayniteBoot
                 options.Add(new LocalizedOption("inherit", L("LOCPlayniteBootOptionMonitorUseGeneral")));
             }
 
+            if (!streaming)
+            {
+                options.Add(new LocalizedOption("playnite", L("LOCPlayniteBootOptionMonitorFollowPlaynite")));
+            }
+
             options.Add(new LocalizedOption("auto", L("LOCPlayniteBootOptionMonitorAutomatic")));
             options.Add(new LocalizedOption("primary", L("LOCPlayniteBootOptionMonitorPrimary")));
 
@@ -390,7 +467,7 @@ namespace PlayniteBoot
             var initialDirectory = string.Empty;
             try
             {
-                initialDirectory = Path.GetDirectoryName(Settings.VideoPath);
+                initialDirectory = Path.GetDirectoryName(GetConfiguredVideoPath());
             }
             catch
             {
@@ -404,14 +481,168 @@ namespace PlayniteBoot
 
             if (!string.IsNullOrWhiteSpace(selected))
             {
-                Settings.VideoPath = selected;
+                Settings.VideoPath = Path.GetFullPath(selected);
+                RefreshVideoLibrary(false);
             }
         }
 
         private void RestoreDefaultVideo()
         {
             Settings.VideoPath = plugin.Paths.DefaultVideoPath;
+            RefreshVideoLibrary(false);
             RuntimeStatus = L("LOCPlayniteBootStatusDefaultVideoSelected");
+        }
+
+        private void OpenVideoFolder()
+        {
+            Directory.CreateDirectory(plugin.Paths.MediaDirectory);
+            ShellService.OpenFolder(plugin.Paths.MediaDirectory);
+        }
+
+        private void RefreshVideoLibrary(bool updateStatus)
+        {
+            var selectedPath = GetConfiguredVideoPath();
+            IReadOnlyList<string> libraryPaths;
+            Exception refreshError = null;
+
+            try
+            {
+                libraryPaths = videoLibrary.GetLibraryVideos();
+            }
+            catch (Exception exception)
+            {
+                libraryPaths = Array.Empty<string>();
+                refreshError = exception;
+            }
+
+            var options = new List<VideoOption>();
+            AddVideoOption(
+                options,
+                plugin.Paths.DefaultVideoPath,
+                F("LOCPlayniteBootVideoDefaultLabel", SafeFileName(plugin.Paths.DefaultVideoPath)));
+
+            foreach (var path in libraryPaths)
+            {
+                if (PathsEqual(path, plugin.Paths.DefaultVideoPath))
+                {
+                    continue;
+                }
+
+                AddVideoOption(options, path, SafeFileName(path));
+            }
+
+            if (!options.Any(option => PathsEqual(option.Path, selectedPath)))
+            {
+                var fileName = SafeFileName(selectedPath);
+                var label = File.Exists(selectedPath)
+                    ? F("LOCPlayniteBootVideoExternalLabel", fileName)
+                    : F("LOCPlayniteBootVideoMissingLabel", fileName);
+                AddVideoOption(options, selectedPath, label);
+            }
+
+            VideoOptions.Clear();
+            foreach (var option in options)
+            {
+                VideoOptions.Add(option);
+            }
+
+            OnPropertyChanged(nameof(SelectedVideoPath));
+            OnPropertyChanged(nameof(SelectedVideoPathDisplay));
+
+            if (!updateStatus)
+            {
+                return;
+            }
+
+            RuntimeStatus = refreshError == null
+                ? F("LOCPlayniteBootStatusVideoLibraryRefreshed", libraryPaths.Count)
+                : F("LOCPlayniteBootStatusVideoLibraryRefreshFailed", refreshError.Message);
+        }
+
+        private static void AddVideoOption(List<VideoOption> options, string path, string label)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            string normalizedPath;
+            try
+            {
+                normalizedPath = Path.GetFullPath(path);
+            }
+            catch
+            {
+                normalizedPath = path;
+            }
+
+            if (options.Any(option => PathsEqual(option.Path, normalizedPath)))
+            {
+                return;
+            }
+
+            options.Add(new VideoOption(normalizedPath, label, normalizedPath));
+        }
+
+        private static string SafeFileName(string path)
+        {
+            try
+            {
+                var fileName = Path.GetFileName(path);
+                return string.IsNullOrWhiteSpace(fileName) ? path : fileName;
+            }
+            catch
+            {
+                return path ?? string.Empty;
+            }
+        }
+
+        private string GetConfiguredVideoPath()
+        {
+            try
+            {
+                return string.IsNullOrWhiteSpace(Settings?.VideoPath)
+                    ? Path.GetFullPath(plugin.Paths.DefaultVideoPath)
+                    : Path.GetFullPath(Settings.VideoPath);
+            }
+            catch
+            {
+                return Settings?.VideoPath ?? plugin.Paths.DefaultVideoPath;
+            }
+        }
+
+        private static bool PathsEqual(string first, string second)
+        {
+            if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(second))
+            {
+                return false;
+            }
+
+            try
+            {
+                return string.Equals(
+                    Path.GetFullPath(first),
+                    Path.GetFullPath(second),
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private static bool IsManualMonitorSelection(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            return !string.Equals(value, "playnite", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(value, "followPlaynite", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(value, "clientResolution", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(value, "client", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(value, "inherit", StringComparison.OrdinalIgnoreCase);
         }
 
         private void ResetSettings()

@@ -31,7 +31,7 @@ namespace PlayniteBoot
             Paths = new RuntimePaths(GetPluginUserDataPath(), installPath);
             Commands = new CommandGenerator(Paths);
             runtimeInstaller = new RuntimeInstaller(Paths);
-            configWriter = new RuntimeConfigWriter(Paths);
+            configWriter = new RuntimeConfigWriter(Paths, PlayniteApi.Paths.ConfigurationPath);
             shortcutService = new ShortcutService(Paths);
             SettingsViewModel = new PlayniteBootSettingsViewModel(this);
 
