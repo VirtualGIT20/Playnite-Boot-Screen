@@ -395,8 +395,8 @@ $streamingSettings = [PSCustomObject]@{
 if ($usingLegacyStreamingSection) {
     Write-Log 'Legacy config section vibepollo detected. It is supported for compatibility; save settings in the extension to migrate to streaming.' 'WARN'
 }
-if ($configVersion -gt 1) {
-    Write-Log "Config version $configVersion is newer than the supported version 1. Unknown options will be ignored." 'WARN'
+if ($configVersion -gt 2) {
+    Write-Log "Config version $configVersion is newer than the supported version 2. Unknown options will be ignored." 'WARN'
 }
 
 # =============================================================================
@@ -1000,12 +1000,10 @@ public static class PlayniteBootNative
 
     [void][PlayniteBootNative]::SetProcessDPIAware()
 
-    # Una finestra transitoria di Playnite (per esempio lo splash centrato)
-    # puo avere un MainWindowHandle valido ed essere visibile per oltre mezzo
-    # secondo. Per non scambiarla con l'interfaccia Fullscreen, la finestra
-    # candidata deve coprire almeno l'85% del monitor scelto per l'overlay.
-    # La soglia e intenzionalmente interna: non e un parametro operativo che
-    # l'utente debba regolare nel config.json.
+    # A transient Playnite window can have a valid MainWindowHandle and remain
+    # visible long enough to look stable. The candidate must therefore cover at
+    # least 85% of the monitor it actually occupies. The monitor is selected by
+    # the largest intersection area, independently from the boot overlay.
     $minimumPlayniteMonitorCoverage = 0.85
 
     function Test-PlayniteWindowReady {
@@ -1014,7 +1012,7 @@ public static class PlayniteBootNative
             $Process,
 
             [Parameter(Mandatory = $true)]
-            $TargetBounds,
+            $AvailableScreens,
 
             [Parameter(Mandatory = $true)]
             [double]$MinimumCoverage
@@ -1022,53 +1020,71 @@ public static class PlayniteBootNative
 
         try {
             if ($Process.HasExited) {
-                return $false
+                return $null
             }
 
             $Process.Refresh()
             $windowHandle = $Process.MainWindowHandle
             if ($windowHandle -eq [IntPtr]::Zero) {
-                return $false
+                return $null
             }
 
             if (-not [PlayniteBootNative]::IsWindowVisible($windowHandle)) {
-                return $false
+                return $null
             }
 
             $windowRectangle = New-Object PlayniteBootNative+RECT
             if (-not [PlayniteBootNative]::GetWindowRect($windowHandle, [ref]$windowRectangle)) {
-                return $false
+                return $null
             }
 
             $windowWidth = $windowRectangle.Right - $windowRectangle.Left
             $windowHeight = $windowRectangle.Bottom - $windowRectangle.Top
             if ($windowWidth -lt 200 -or $windowHeight -lt 120) {
-                return $false
+                return $null
             }
 
-            # Calcoliamo la parte della finestra realmente sovrapposta al
-            # monitor selezionato. Questo evita falsi positivi sia per finestre
-            # piccole centrate, sia per finestre grandi aperte su un altro
-            # monitor.
-            $intersectionLeft = [Math]::Max($windowRectangle.Left, $TargetBounds.Left)
-            $intersectionTop = [Math]::Max($windowRectangle.Top, $TargetBounds.Top)
-            $intersectionRight = [Math]::Min($windowRectangle.Right, $TargetBounds.Right)
-            $intersectionBottom = [Math]::Min($windowRectangle.Bottom, $TargetBounds.Bottom)
+            $bestScreen = $null
+            $bestIntersectionArea = 0.0
+            foreach ($screen in @($AvailableScreens)) {
+                $bounds = $screen.Bounds
+                $intersectionLeft = [Math]::Max($windowRectangle.Left, $bounds.Left)
+                $intersectionTop = [Math]::Max($windowRectangle.Top, $bounds.Top)
+                $intersectionRight = [Math]::Min($windowRectangle.Right, $bounds.Right)
+                $intersectionBottom = [Math]::Min($windowRectangle.Bottom, $bounds.Bottom)
 
-            $intersectionWidth = [Math]::Max(0, $intersectionRight - $intersectionLeft)
-            $intersectionHeight = [Math]::Max(0, $intersectionBottom - $intersectionTop)
-            $intersectionArea = [double]$intersectionWidth * [double]$intersectionHeight
-            $monitorArea = [double]$TargetBounds.Width * [double]$TargetBounds.Height
+                $intersectionWidth = [Math]::Max(0, $intersectionRight - $intersectionLeft)
+                $intersectionHeight = [Math]::Max(0, $intersectionBottom - $intersectionTop)
+                $intersectionArea = [double]$intersectionWidth * [double]$intersectionHeight
 
+                if ($intersectionArea -gt $bestIntersectionArea) {
+                    $bestIntersectionArea = $intersectionArea
+                    $bestScreen = $screen
+                }
+            }
+
+            if ($null -eq $bestScreen) {
+                return $null
+            }
+
+            $monitorArea = [double]$bestScreen.Bounds.Width * [double]$bestScreen.Bounds.Height
             if ($monitorArea -le 0) {
-                return $false
+                return $null
             }
 
-            $coverage = $intersectionArea / $monitorArea
-            return $coverage -ge $MinimumCoverage
+            $coverage = $bestIntersectionArea / $monitorArea
+            if ($coverage -lt $MinimumCoverage) {
+                return $null
+            }
+
+            return [PSCustomObject]@{
+                Screen = $bestScreen
+                Coverage = $coverage
+                WindowHandle = $windowHandle
+            }
         }
         catch {
-            return $false
+            return $null
         }
     }
 
@@ -1117,9 +1133,11 @@ public static class PlayniteBootNative
     # Parametri generali. I valori e i limiti sono gli stessi della baseline.
     $settings = [PSCustomObject]@{
         PlayniteExecutable = [string](Get-ConfigValue -Config $config -Name 'playniteExecutable' -DefaultValue 'auto')
+        PlayniteConfigurationPath = [string](Get-ConfigValue -Config $config -Name 'playniteConfigurationPath' -DefaultValue '')
         LaunchArguments = [string](Get-ConfigValue -Config $config -Name 'launchArguments' -DefaultValue '--hidesplashscreen')
         VideoPath = $(Resolve-ConfiguredPath -Path ([string](Get-ConfigValue -Config $config -Name 'videoPath' -DefaultValue '.\media\boot-4k60.mp4')) -BaseDirectory $baseDirectory)
-        Monitor = [string](Get-ConfigValue -Config $config -Name 'monitor' -DefaultValue 'auto')
+        Monitor = [string](Get-ConfigValue -Config $config -Name 'monitor' -DefaultValue 'playnite')
+        MonitorFallback = [string](Get-ConfigValue -Config $config -Name 'monitorFallback' -DefaultValue 'primary')
         VideoStretch = [string](Get-ConfigValue -Config $config -Name 'videoStretch' -DefaultValue 'UniformToFill')
         LoopVideo = [bool](Get-ConfigValue -Config $config -Name 'loopVideo' -DefaultValue $false)
         WaitForVideoEnd = [bool](Get-ConfigValue -Config $config -Name 'waitForVideoEnd' -DefaultValue $false)
@@ -1151,6 +1169,53 @@ public static class PlayniteBootNative
     Add-Type -AssemblyName System.Xaml
     Add-Type -AssemblyName System.Windows.Forms
 
+    function Get-PlayniteConfiguredScreen {
+        param(
+            [Parameter(Mandatory = $false)]
+            [string]$ConfigurationDirectory,
+
+            [Parameter(Mandatory = $true)]
+            $AvailableScreens
+        )
+
+        if ([string]::IsNullOrWhiteSpace($ConfigurationDirectory)) {
+            Write-Log 'Playnite configuration path is unavailable. Follow Playnite will use the configured fallback monitor.' 'WARN'
+            return $null
+        }
+
+        try {
+            $fullscreenConfigPath = Join-Path -Path $ConfigurationDirectory -ChildPath 'fullscreenConfig.json'
+            if (-not (Test-Path -LiteralPath $fullscreenConfigPath -PathType Leaf)) {
+                Write-Log "Playnite Fullscreen configuration was not found at '$fullscreenConfigPath'. Using the configured fallback monitor." 'WARN'
+                return $null
+            }
+
+            $fullscreenConfig = Get-Content -LiteralPath $fullscreenConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            $usePrimaryDisplay = [bool](Get-ConfigValue -Config $fullscreenConfig -Name 'UsePrimaryDisplay' -DefaultValue $false)
+            if ($usePrimaryDisplay) {
+                $primary = [System.Windows.Forms.Screen]::PrimaryScreen
+                if ($null -ne $primary) {
+                    Write-Log "Follow Playnite selected the primary monitor: $($primary.DeviceName)."
+                    return $primary
+                }
+            }
+
+            $monitorIndex = [int](Get-ConfigValue -Config $fullscreenConfig -Name 'Monitor' -DefaultValue -1)
+            if ($monitorIndex -ge 0 -and $monitorIndex -lt $AvailableScreens.Count) {
+                $configuredScreen = $AvailableScreens[$monitorIndex]
+                Write-Log "Follow Playnite selected monitor index $($monitorIndex): $($configuredScreen.DeviceName)."
+                return $configuredScreen
+            }
+
+            Write-Log "Playnite Fullscreen monitor index $monitorIndex is not available. Using the configured fallback monitor." 'WARN'
+            return $null
+        }
+        catch {
+            Write-Log "Could not read Playnite Fullscreen display settings: $($_.Exception.Message). Using the configured fallback monitor." 'WARN'
+            return $null
+        }
+    }
+
     function Select-ScreenByMode {
         param(
             [Parameter(Mandatory = $true)]
@@ -1160,7 +1225,15 @@ public static class PlayniteBootNative
             $AvailableScreens
         )
 
+        if ([string]::IsNullOrWhiteSpace($SelectionMode)) {
+            Write-Log 'Monitor mode is empty. A fallback monitor will be used.' 'WARN'
+            return $null
+        }
+
         switch -Regex ($SelectionMode.ToLowerInvariant()) {
+            '^playnite$|^followplaynite$' {
+                return Get-PlayniteConfiguredScreen -ConfigurationDirectory $settings.PlayniteConfigurationPath -AvailableScreens $AvailableScreens
+            }
             '^primary$' {
                 return [System.Windows.Forms.Screen]::PrimaryScreen
             }
@@ -1176,7 +1249,8 @@ public static class PlayniteBootNative
                 if ($index -ge 0 -and $index -lt $AvailableScreens.Count) {
                     return $AvailableScreens[$index]
                 }
-                throw "Invalid monitor index: $index. Available monitors: $($AvailableScreens.Count)."
+                Write-Log "Monitor index $index is not available. A fallback monitor will be used." 'WARN'
+                return $null
             }
             '^clientresolution$|^client$' {
                 $clientResolution = Get-ClientResolution
@@ -1216,8 +1290,8 @@ public static class PlayniteBootNative
                 return $null
             }
             default {
-                Write-Log "Invalid monitor mode ('$SelectionMode'). Using the monitor containing the cursor." 'WARN'
-                return [System.Windows.Forms.Screen]::FromPoint([System.Windows.Forms.Cursor]::Position)
+                Write-Log "Invalid monitor mode ('$SelectionMode'). Using the primary monitor." 'WARN'
+                return [System.Windows.Forms.Screen]::PrimaryScreen
             }
         }
     }
@@ -1237,6 +1311,12 @@ public static class PlayniteBootNative
     $selectedScreen = Select-ScreenByMode -SelectionMode $selectedMonitorMode -AvailableScreens $screens
     if ($null -eq $selectedScreen -and $selectedMonitorMode -ne $settings.Monitor) {
         $selectedScreen = Select-ScreenByMode -SelectionMode $settings.Monitor -AvailableScreens $screens
+    }
+    if ($null -eq $selectedScreen -and
+        ($selectedMonitorMode -match '^(?i:playnite|followplaynite)$' -or
+         $settings.Monitor -match '^(?i:playnite|followplaynite)$')) {
+        Write-Log "Follow Playnite could not resolve a display. Falling back to '$($settings.MonitorFallback)'." 'WARN'
+        $selectedScreen = Select-ScreenByMode -SelectionMode $settings.MonitorFallback -AvailableScreens $screens
     }
     if ($null -eq $selectedScreen) {
         $selectedScreen = [System.Windows.Forms.Screen]::PrimaryScreen
@@ -1886,10 +1966,11 @@ public static class PlayniteBootNative
             }
         }
 
-        $windowIsReady = $false
+        $windowReadiness = $null
         if ($null -ne $candidateProcess) {
-            $windowIsReady = Test-PlayniteWindowReady -Process $candidateProcess -TargetBounds $screenBounds -MinimumCoverage $minimumPlayniteMonitorCoverage
+            $windowReadiness = Test-PlayniteWindowReady -Process $candidateProcess -AvailableScreens $screens -MinimumCoverage $minimumPlayniteMonitorCoverage
         }
+        $windowIsReady = $null -ne $windowReadiness
 
         $candidateProcessId = $null
         $candidateWindowHandle = [IntPtr]::Zero
@@ -1922,7 +2003,12 @@ public static class PlayniteBootNative
                         $state.ReadySince = [DateTime]::UtcNow
                         $state.ReadyProcessId = $candidateProcessId
                         $state.ReadyWindowHandle = $candidateWindowHandle
-                        Write-Log "Fullscreen window detected for PID ${candidateProcessId}: monitor coverage is at least 85%."
+                        $coveragePercent = [Math]::Round($windowReadiness.Coverage * 100.0, 1)
+                        $playniteScreenName = $windowReadiness.Screen.DeviceName
+                        Write-Log "Fullscreen window detected for PID ${candidateProcessId} on ${playniteScreenName}: monitor coverage is ${coveragePercent}%."
+                        if ($playniteScreenName -ne $selectedScreen.DeviceName) {
+                            Write-Log "Playnite Fullscreen is on ${playniteScreenName} while the boot overlay is on $($selectedScreen.DeviceName). The overlay will close normally." 'WARN'
+                        }
                     }
 
                     $stableMilliseconds = ([DateTime]::UtcNow - $state.ReadySince).TotalMilliseconds
@@ -1979,7 +2065,12 @@ public static class PlayniteBootNative
                 $state.ReadySince = [DateTime]::UtcNow
                 $state.ReadyProcessId = $candidateProcessId
                 $state.ReadyWindowHandle = $candidateWindowHandle
-                Write-Log "Fullscreen window detected for PID ${candidateProcessId}: monitor coverage is at least 85%."
+                $coveragePercent = [Math]::Round($windowReadiness.Coverage * 100.0, 1)
+                $playniteScreenName = $windowReadiness.Screen.DeviceName
+                Write-Log "Fullscreen window detected for PID ${candidateProcessId} on ${playniteScreenName}: monitor coverage is ${coveragePercent}%."
+                if ($playniteScreenName -ne $selectedScreen.DeviceName) {
+                    Write-Log "Playnite Fullscreen is on ${playniteScreenName} while the boot overlay is on $($selectedScreen.DeviceName). The overlay will close normally." 'WARN'
+                }
             }
 
             $stableMilliseconds = ([DateTime]::UtcNow - $state.ReadySince).TotalMilliseconds

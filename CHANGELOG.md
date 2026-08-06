@@ -2,6 +2,24 @@
 
 All notable changes are documented here. Versions follow the Playnite extension manifest format.
 
+## [0.6.0] - 2026-08-06
+
+### Added
+
+- A managed video library scans supported files directly inside the persistent `Runtime\media` folder.
+- `Follow Playnite Fullscreen setting` selects the desktop overlay monitor from Playnite's read-only Fullscreen configuration, with a saved manual fallback.
+- Refresh, open-folder, external-file, and restore-default controls for boot-video selection.
+
+### Changed
+
+- Videos inside the standard media folder are written to the runtime configuration as portable relative paths.
+- The extension icon now uses a language-neutral design.
+
+### Fixed
+
+- Playnite Fullscreen readiness is detected on the monitor actually occupied by its window, even when the boot overlay is displayed elsewhere.
+- Stale or unavailable monitor indices now fall back safely instead of stopping the launcher.
+
 ## [0.5.0] - 2026-08-05
 
 ### Added

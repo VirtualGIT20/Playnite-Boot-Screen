@@ -59,6 +59,7 @@
     <Compile Include="Models\LocalizedOption.cs" />
     <Compile Include="Models\PlayniteBootSettingsData.cs" />
     <Compile Include="Models\StreamingSettings.cs" />
+    <Compile Include="Models\VideoOption.cs" />
     <Compile Include="PlayniteBootPlugin.cs" />
     <Compile Include="PlayniteBootSettings.cs" />
     <Compile Include="PlayniteBootSettingsView.xaml.cs">
@@ -69,6 +70,7 @@
     <Compile Include="Services\RuntimeConfigWriter.cs" />
     <Compile Include="Services\RuntimeInstaller.cs" />
     <Compile Include="Services\RuntimePaths.cs" />
+    <Compile Include="Services\VideoLibraryService.cs" />
     <Compile Include="Services\ShellService.cs" />
     <Compile Include="Services\ShortcutService.cs" />
     <Compile Include="Services\WindowsPowerShell.cs" />

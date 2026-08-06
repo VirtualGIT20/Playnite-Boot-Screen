@@ -1,18 +1,15 @@
-# Playnite Boot Screen 0.5.0
+# Playnite Boot Screen 0.6.0
 
-First stable public release of Playnite Boot Screen.
+This update improves multi-monitor behavior and makes custom boot videos easier to manage.
 
 Highlights:
+- optional **Follow Playnite Fullscreen setting** monitor selection, read from Playnite's configuration in read-only mode;
+- safe fallback to the last manual monitor choice when Playnite's display setting cannot be resolved;
+- readiness detection on whichever monitor actually contains the Playnite Fullscreen window;
+- a managed video list for supported files placed directly in the persistent `Runtime\media` folder;
+- external video paths remain supported;
+- standard-folder videos are stored in the runtime configuration using relative paths;
+- new language-neutral extension icon;
+- runtime updated to 1.0.4.
 
-- English 4K60 default boot video with configurable custom media;
-- direct Desktop and Start menu shortcuts;
-- optional full-video playback before revealing Playnite;
-- Sunshine/Apollo-compatible streaming preload using Prep and Detached commands;
-- Alt+F4 cancels the active boot sequence and stops the Playnite Fullscreen process started by it;
-- Alt+Tab explicitly yields the overlay while automatic foreground changes from streaming launchers are ignored;
-- English and Italian UI;
-- hardened shortcut path handling and absolute Windows PowerShell resolution;
-- clean, deterministic build and packaging output;
-- managed runtime, diagnostics, and bounded log files.
-
-Before reporting a streaming black screen, retry once with Playnite's default Fullscreen theme and attach both Playnite and Playnite Boot Screen logs.
+Existing shortcuts, streaming commands, custom media, and settings remain compatible.

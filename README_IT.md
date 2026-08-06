@@ -12,7 +12,9 @@ Supporta anche un flusso di preload generico per Sunshine, Apollo, Vibeshine, Vi
 
 ## Funzioni
 
-- Video, monitor, adattamento, fade, mute e volume da 0 a 100 configurabili.
+- Elenco gestito dei video supportati nella cartella media persistente, mantenendo anche i percorsi video esterni.
+- Possibilità di seguire il display Fullscreen scelto da Playnite oppure selezionare manualmente il monitor, con rilevamento sicuro in configurazioni multi-monitor.
+- Adattamento, fade, mute e volume da 0 a 100 configurabili.
 - Possibilità di mostrare Playnite appena pronto oppure attendere la fine naturale del video.
 - Runtime gestito fuori dalla directory sostituita durante gli aggiornamenti dell'estensione.
 - Nome personalizzabile per i collegamenti Desktop e menu Start.
@@ -76,6 +78,8 @@ I file persistenti vengono salvati nella directory dati dell’estensione:
 ```
 
 La directory di installazione dell’estensione può essere sostituita senza eliminare video personalizzati, configurazione o log.
+
+Copia i file `.mp4`, `.mkv`, `.webm`, `.avi` o `.mov` direttamente in `Runtime\media`, quindi usa **Aggiorna elenco** nelle impostazioni. I file esterni alla cartella restano selezionabili tramite **Sfoglia esterno…**.
 
 ## Build e pacchetto
 

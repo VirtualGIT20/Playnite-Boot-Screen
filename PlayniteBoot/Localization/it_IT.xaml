@@ -5,7 +5,7 @@
     <sys:String x:Key="LOCPlayniteBootTabStreaming">Streaming</sys:String>
     <sys:String x:Key="LOCPlayniteBootTabInstallation">Installazione e diagnostica</sys:String>
 
-    <sys:String x:Key="LOCPlayniteBootIntroGeneral">Scegli il video di avvio e le poche opzioni che controllano quando mostrare Playnite. In genere non è necessario modificare i parametri avanzati di rilevamento.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroGeneral">Scegli un video di avvio dalla cartella multimediale gestita oppure seleziona un file esterno. Playnite può essere rilevato su qualsiasi monitor quando la finestra Fullscreen è pronta.</sys:String>
     <sys:String x:Key="LOCPlayniteBootIntroStreaming">Per Sunshine, Apollo e fork compatibili: usa il primo comando come Prep e il secondo come Detached. Il video parte prima dello stream e mantiene coperto il desktop.</sys:String>
 
     <sys:String x:Key="LOCPlayniteBootGroupVideo">Video</sys:String>
@@ -49,9 +49,12 @@
     <sys:String x:Key="LOCPlayniteBootTipWaitForVideoEnd">Playnite parte subito in background, ma l'overlay sfuma solo quando Playnite è pronta e il video raggiunge la fine naturale.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipLoopVideo">La ripetizione non è disponibile quando si attende la fine naturale del video.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipMinimumDuration">Ignorata quando si attende il video completo.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTipMonitorSelection">Segui Playnite legge in sola lettura la scelta del display Fullscreen. Se non è disponibile, viene usata l’ultima scelta manuale del monitor.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipPlayniteExecutable">Mantieni “auto” salvo installazioni di Playnite in percorsi non standard.</sys:String>
 
-    <sys:String x:Key="LOCPlayniteBootButtonBrowse">Sfoglia…</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonRefreshVideos">Aggiorna elenco</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonOpenVideoFolder">Apri cartella video</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonBrowseExternal">Sfoglia esterno…</sys:String>
     <sys:String x:Key="LOCPlayniteBootButtonDefaultVideo">Usa predefinito</sys:String>
     <sys:String x:Key="LOCPlayniteBootButtonResetSettings">Ripristina impostazioni predefinite</sys:String>
     <sys:String x:Key="LOCPlayniteBootButtonCopy">Copia</sys:String>
@@ -74,6 +77,7 @@
 
     <sys:String x:Key="LOCPlayniteBootOptionMonitorClientResolution">Abbina la risoluzione del client streaming</sys:String>
     <sys:String x:Key="LOCPlayniteBootOptionMonitorUseGeneral">Usa il monitor scelto in Generale</sys:String>
+    <sys:String x:Key="LOCPlayniteBootOptionMonitorFollowPlaynite">Segui l’impostazione Fullscreen di Playnite</sys:String>
     <sys:String x:Key="LOCPlayniteBootOptionMonitorAutomatic">Automatico (monitor contenente il cursore)</sys:String>
     <sys:String x:Key="LOCPlayniteBootOptionMonitorPrimary">Monitor principale</sys:String>
     <sys:String x:Key="LOCPlayniteBootOptionMonitorIndexed">Monitor {0}: {1} ({2}×{3})</sys:String>
@@ -84,6 +88,11 @@
     <sys:String x:Key="LOCPlayniteBootOptionStretchStretch">Estendi per riempire</sys:String>
     <sys:String x:Key="LOCPlayniteBootOptionFallbackStandalone">Avvio normale se il preload non è disponibile</sys:String>
 
+    <sys:String x:Key="LOCPlayniteBootVideoDefaultLabel">Predefinito — {0}</sys:String>
+    <sys:String x:Key="LOCPlayniteBootVideoExternalLabel">Esterno — {0}</sys:String>
+    <sys:String x:Key="LOCPlayniteBootVideoMissingLabel">Mancante — {0}</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusVideoLibraryRefreshed">Libreria video aggiornata — trovati {0} file supportati.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusVideoLibraryRefreshFailed">Impossibile aggiornare la libreria video: {0}</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusDefaultVideoSelected">È stato selezionato il video predefinito incluso.</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusDefaultsRestored">Impostazioni predefinite ripristinate. I video personalizzati e i log non sono stati eliminati.</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusRuntimeInstalled">Runtime installato: {0}; file copiati: {1}.</sys:String>

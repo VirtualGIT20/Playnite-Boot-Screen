@@ -18,10 +18,10 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="210" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
@@ -30,24 +30,47 @@
 
                                 <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelVideoFile}"
                                            VerticalAlignment="Center" Margin="0,4" />
-                                <TextBox Grid.Row="0" Grid.Column="1"
-                                         Text="{Binding Settings.VideoPath, UpdateSourceTrigger=PropertyChanged}"
-                                         Margin="6,3" />
-                                <Button Grid.Row="0" Grid.Column="2" Content="{DynamicResource LOCPlayniteBootButtonBrowse}"
-                                        Command="{Binding BrowseVideoCommand}" Margin="6,3" Padding="12,3" />
-                                <Button Grid.Row="0" Grid.Column="3" Content="{DynamicResource LOCPlayniteBootButtonDefaultVideo}"
-                                        Command="{Binding RestoreDefaultVideoCommand}" Margin="0,3,6,3" Padding="12,3" />
+                                <ComboBox Grid.Row="0" Grid.Column="1"
+                                          ItemsSource="{Binding VideoOptions}"
+                                          SelectedValuePath="Path"
+                                          SelectedValue="{Binding SelectedVideoPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          ToolTip="{Binding SelectedVideoPathDisplay}"
+                                          Margin="6,3">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Label}" ToolTip="{Binding ToolTip}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
 
-                                <CheckBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                                <TextBlock Grid.Row="1" Grid.Column="1"
+                                           Text="{Binding SelectedVideoPathDisplay}"
+                                           ToolTip="{Binding SelectedVideoPathDisplay}"
+                                           TextTrimming="CharacterEllipsis"
+                                           Opacity="0.72"
+                                           Margin="6,0,6,5" />
+
+                                <WrapPanel Grid.Row="2" Grid.Column="1" Margin="3,0,3,5">
+                                    <Button Content="{DynamicResource LOCPlayniteBootButtonRefreshVideos}"
+                                            Command="{Binding RefreshVideoLibraryCommand}" Margin="3" Padding="12,3" />
+                                    <Button Content="{DynamicResource LOCPlayniteBootButtonOpenVideoFolder}"
+                                            Command="{Binding OpenVideoFolderCommand}" Margin="3" Padding="12,3" />
+                                    <Button Content="{DynamicResource LOCPlayniteBootButtonBrowseExternal}"
+                                            Command="{Binding BrowseVideoCommand}" Margin="3" Padding="12,3" />
+                                    <Button Content="{DynamicResource LOCPlayniteBootButtonDefaultVideo}"
+                                            Command="{Binding RestoreDefaultVideoCommand}" Margin="3" Padding="12,3" />
+                                </WrapPanel>
+
+                                <CheckBox Grid.Row="3" Grid.Column="1"
                                           Content="{DynamicResource LOCPlayniteBootCheckWaitForVideoEnd}"
                                           IsChecked="{Binding Settings.WaitForVideoEnd}" Margin="6,5"
                                           ToolTip="{DynamicResource LOCPlayniteBootTipWaitForVideoEnd}" />
-                                <CheckBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                                <CheckBox Grid.Row="4" Grid.Column="1"
                                           Content="{DynamicResource LOCPlayniteBootCheckLoopVideo}"
                                           IsChecked="{Binding Settings.LoopVideo}"
                                           IsEnabled="{Binding IsLoopVideoEnabled}" Margin="6,5"
                                           ToolTip="{DynamicResource LOCPlayniteBootTipLoopVideo}" />
-                                <CheckBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
+                                <CheckBox Grid.Row="5" Grid.Column="1"
                                           Content="{DynamicResource LOCPlayniteBootCheckHideCursor}"
                                           IsChecked="{Binding Settings.HideMouseCursor}" Margin="6,5" />
                             </Grid>
@@ -69,6 +92,7 @@
                                 <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding GeneralMonitorOptions}"
                                           DisplayMemberPath="Label" SelectedValuePath="Value"
                                           SelectedValue="{Binding Settings.Monitor, UpdateSourceTrigger=PropertyChanged}"
+                                          ToolTip="{DynamicResource LOCPlayniteBootTipMonitorSelection}"
                                           Margin="6,3" />
 
                                 <TextBlock Grid.Row="1" Text="{DynamicResource LOCPlayniteBootLabelVideoStretch}"

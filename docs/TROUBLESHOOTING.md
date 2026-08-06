@@ -22,6 +22,12 @@ Stop-Process -Name Playnite.FullscreenApp -Force -ErrorAction SilentlyContinue
 
 These commands do not terminate Playnite Desktop unless Desktop is itself switching or shutting down.
 
+## Overlay and Playnite on different monitors
+
+For desktop launches, select **Follow Playnite Fullscreen setting** to place the overlay on the display configured by Playnite. The setting is read in read-only mode; if the configuration is missing, invalid, or references a disconnected display, the extension uses the last manual monitor choice and finally the primary display.
+
+The overlay intentionally does not move after it is shown. If Playnite opens on another monitor, readiness is evaluated against the monitor occupied by the Playnite window and the overlay fades normally. The runtime log records both display names.
+
 ## Black screen after the overlay fades
 
 A Playnite Fullscreen theme can create a fullscreen window but fail to render visible content on a physical or virtual display. This can look like a frozen boot overlay even when Playnite Boot Screen has already exited normally.
