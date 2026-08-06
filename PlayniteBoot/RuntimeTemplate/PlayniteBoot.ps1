@@ -1203,7 +1203,7 @@ public static class PlayniteBootNative
             $monitorIndex = [int](Get-ConfigValue -Config $fullscreenConfig -Name 'Monitor' -DefaultValue -1)
             if ($monitorIndex -ge 0 -and $monitorIndex -lt $AvailableScreens.Count) {
                 $configuredScreen = $AvailableScreens[$monitorIndex]
-                Write-Log "Follow Playnite selected monitor index $monitorIndex: $($configuredScreen.DeviceName)."
+                Write-Log "Follow Playnite selected monitor index $($monitorIndex): $($configuredScreen.DeviceName)."
                 return $configuredScreen
             }
 
