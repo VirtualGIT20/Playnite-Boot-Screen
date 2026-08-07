@@ -8,7 +8,7 @@ Playnite Boot Screen è un'estensione Generic Plugin per Playnite che mostra un 
 
 ## Demo
 
-https://github.com/user-attachments/assets/d903b8a3-9e3c-46d0-9ef4-f603980d2ea9
+https://github.com/user-attachments/assets/fc1d7d9a-7a05-4b44-a43e-959a9b4a4fad
 
 ## Funzioni
 
