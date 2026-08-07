@@ -2,7 +2,7 @@
 
 [Italiano](README_IT.md) · [Changelog](CHANGELOG.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-![Playnite Boot Screen preview](docs/assets/boot-screen.png)
+https://github.com/user-attachments/assets/d903b8a3-9e3c-46d0-9ef4-f603980d2ea9
 
 Playnite Boot Screen is a Playnite Generic Plugin that displays a configurable fullscreen boot video while Playnite Fullscreen starts in the background.
 
