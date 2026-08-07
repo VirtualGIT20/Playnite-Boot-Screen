@@ -6,9 +6,9 @@
 
 Playnite Boot Screen è un'estensione Generic Plugin per Playnite che mostra un video di avvio a schermo intero mentre Playnite Fullscreen viene caricato in background.
 
-Supporta anche un flusso di preload generico per Sunshine, Apollo, Vibeshine, Vibepollo e fork compatibili: il video può partire tramite comando **Prep** prima dell'apertura dello stream, mentre un comando **Detached** avvia Playnite dietro lo stesso overlay.
+## Demo
 
-> Estensione indipendente della community, non affiliata né approvata dal progetto Playnite.
+https://github.com/user-attachments/assets/d903b8a3-9e3c-46d0-9ef4-f603980d2ea9
 
 ## Funzioni
 
