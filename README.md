@@ -8,7 +8,7 @@ Playnite Boot Screen is a Playnite Generic Plugin that displays a configurable f
 
 ## Demo
 
-https://github.com/user-attachments/assets/d903b8a3-9e3c-46d0-9ef4-f603980d2ea9
+https://github.com/user-attachments/assets/6d77a081-9165-4f0f-a6bb-785642ced0e7
 
 ## Features
 
