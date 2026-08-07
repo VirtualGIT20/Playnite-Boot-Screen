@@ -2,13 +2,13 @@
 
 [Italiano](README_IT.md) · [Changelog](CHANGELOG.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-https://github.com/user-attachments/assets/d903b8a3-9e3c-46d0-9ef4-f603980d2ea9
+![Playnite Boot Screen preview](docs/assets/boot-screen.png)
 
 Playnite Boot Screen is a Playnite Generic Plugin that displays a configurable fullscreen boot video while Playnite Fullscreen starts in the background.
 
-It also supports a generic streaming preload flow for Sunshine, Apollo, Vibeshine, Vibepollo, and compatible forks: the video can start in a **Prep** command before the client stream opens, then a **Detached** command launches Playnite behind the same overlay.
+## Demo
 
-> This is an independent community extension and is not affiliated with or endorsed by the Playnite project.
+https://github.com/user-attachments/assets/d903b8a3-9e3c-46d0-9ef4-f603980d2ea9
 
 ## Features
 
