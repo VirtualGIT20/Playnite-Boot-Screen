@@ -8,8 +8,8 @@
     - Standalone: mostra il video, avvia Playnite e dissolve l'overlay quando
       la finestra Fullscreen e stabile.
     - Streaming: the Prep command uses Preload to prepare the video on the target
-      display; the Detached command uses Continue to launch Playnite behind
-      the same overlay.
+      display; the Detached command uses Continue to launch Playnite directly,
+      while the Host keeps the same overlay visible until Playnite is ready.
 
     La modalita Host e interna: viene avviata automaticamente da Preload e non
     deve essere configurata manualmente.
@@ -605,6 +605,33 @@ function Invoke-PreloadCommand {
     }
 }
 
+function Start-PlayniteFromContinue {
+    $existingProcess = Get-RunningFullscreenProcess
+    if ($null -ne $existingProcess) {
+        Write-Log "Continue found Playnite Fullscreen already running with PID $($existingProcess.Id). The host will adopt the existing process."
+        return $existingProcess
+    }
+
+    $configuredExecutable = [string](Get-ConfigValue -Config $config -Name 'playniteExecutable' -DefaultValue 'auto')
+    $launchArguments = [string](Get-ConfigValue -Config $config -Name 'launchArguments' -DefaultValue '--hidesplashscreen')
+    $resolvedExecutable = Find-PlayniteFullscreenExecutable -ConfiguredPath $configuredExecutable -BaseDirectory $baseDirectory
+
+    $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $processInfo.FileName = $resolvedExecutable
+    $processInfo.Arguments = $launchArguments
+    $processInfo.WorkingDirectory = Split-Path -Parent $resolvedExecutable
+    $processInfo.UseShellExecute = $true
+
+    Write-Log "Continue process PID $PID is launching Playnite: $resolvedExecutable $launchArguments"
+    $process = [System.Diagnostics.Process]::Start($processInfo)
+    if ($null -eq $process) {
+        throw 'Continue could not start Playnite Fullscreen.'
+    }
+
+    Write-Log "Continue launched Playnite Fullscreen with PID $($process.Id)."
+    return $process
+}
+
 function Invoke-ContinueCommand {
     if (Test-StreamingCancellation) {
         $script:continueWasCancelled = $true
@@ -654,8 +681,9 @@ function Invoke-ContinueCommand {
             return $false
         }
 
+        $continueProcess = Start-PlayniteFromContinue
         [void]$continueEvent.Set()
-        Write-Log 'Continue signal sent to the host. The Detached command can exit; the host will launch Playnite.'
+        Write-Log "Continue signal sent to the host after launching/adopting Playnite PID $($continueProcess.Id). The Detached command can exit; the host will track readiness."
         return $true
     }
     catch {
@@ -1927,12 +1955,21 @@ public static class PlayniteBootNative
             }
         }
 
-        # In Host il video viene preparato prima; Playnite parte solo dopo il
-        # segnale inviato dal Detached command Continue.
+        # In Host il video viene preparato prima. Il Detached command Continue
+        # avvia Playnite direttamente, cosi il processo nasce dal launcher che
+        # Windows considera foreground; l'Host si limita ad adottarlo e seguirlo.
         if ($Mode -eq 'Host' -and -not $state.LaunchStarted) {
             if ($null -ne $continueEvent -and $continueEvent.WaitOne(0)) {
-                Write-Log 'Continue signal received: launching Playnite behind the preloaded overlay.'
-                & $startPlaynite
+                $state.Process = Get-RunningFullscreenProcess
+                $state.LaunchStarted = $true
+                $state.StartWatch.Restart()
+
+                if ($null -ne $state.Process) {
+                    Write-Log "Continue signal received: adopting Playnite Fullscreen PID $($state.Process.Id) launched by the Detached command."
+                }
+                else {
+                    Write-Log 'Continue signal received: Playnite was launched by the Detached command; waiting for the process to become visible to the host.'
+                }
             }
             elseif ($state.PreloadWatch.ElapsedMilliseconds -ge $streamingSettings.PreloadAbandonTimeoutMilliseconds) {
                 Write-Log "No Continue signal was received within $($streamingSettings.PreloadAbandonTimeoutMilliseconds) ms. Closing the host to avoid a leftover process." 'WARN'
