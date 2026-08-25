@@ -48,11 +48,11 @@ git push origin "v$version"
 
 The release workflow builds the plugin, installs Playnite on the Windows runner, packages with Toolbox, generates a SHA-256 file, and creates the GitHub release.
 
-## 5. Submit to the Playnite add-on database
+## 5. Publish through the Playnite add-on database
 
 After the release asset URL is live:
 
 1. verify `distribution/installer.yaml` and `distribution/addon.yaml`;
-2. fork `JosefNemec/PlayniteAddonDatabase`;
-3. add the add-on manifest under `addons/generic`;
-4. open a pull request.
+2. confirm the new package entry in `distribution/installer.yaml` points to the live `.pext` asset;
+3. for an add-on that is already published, no new database pull request is required: the existing store entry follows `InstallerManifestUrl` to this repository and Playnite can discover the new compatible package;
+4. open a pull request against `JosefNemec/PlayniteAddonDatabase` only for the initial publication or when the central add-on metadata / `InstallerManifestUrl` must change.

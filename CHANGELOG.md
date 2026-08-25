@@ -4,6 +4,8 @@ All notable changes are documented here. Versions follow the Playnite extension 
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-25
+
 ### Fixed
 
 - Streaming Prep/Continue now launches Playnite Fullscreen from the Detached/Continue process and lets the preload Host adopt that PID, preventing Playnite from remaining behind another foreground application when the boot overlay closes.

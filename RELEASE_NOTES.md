@@ -1,15 +1,12 @@
-# Playnite Boot Screen 0.6.0
+# Playnite Boot Screen 0.6.1
 
-This update improves multi-monitor behavior and makes custom boot videos easier to manage.
+This maintenance release fixes foreground handling when Playnite Fullscreen is launched through streaming Prep/Detached commands.
 
 Highlights:
-- optional **Follow Playnite Fullscreen setting** monitor selection, read from Playnite's configuration in read-only mode;
-- safe fallback to the last manual monitor choice when Playnite's display setting cannot be resolved;
-- readiness detection on whichever monitor actually contains the Playnite Fullscreen window;
-- a managed video list for supported files placed directly in the persistent `Runtime\media` folder;
-- external video paths remain supported;
-- standard-folder videos are stored in the runtime configuration using relative paths;
-- new language-neutral extension icon;
-- runtime updated to 1.0.4.
+- Detached/Continue now launches Playnite Fullscreen directly, preserving the normal Windows foreground launch context;
+- the preload Host adopts the launched Playnite PID and keeps the boot overlay visible until Playnite is ready;
+- fixes Playnite Fullscreen sometimes remaining behind a terminal or other foreground application after the overlay closes;
+- existing Prep and Detached command strings remain unchanged;
+- runtime updated to 1.0.5.
 
-Existing shortcuts, streaming commands, custom media, and settings remain compatible.
+Existing shortcuts, custom media, settings, and streaming configuration remain compatible.
