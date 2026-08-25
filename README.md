@@ -66,7 +66,7 @@ Enable streaming preload in the **Streaming** tab, then copy:
 1. **Prep command — Preload**;
 2. **Detached command — Continue**.
 
-No Undo command is required. Preload starts a hidden host, selects the streaming display, opens the video, and exits only after the video is visible and advancing. Continue signals that host to launch Playnite behind the overlay.
+No Undo command is required. Preload starts a hidden host, selects the streaming display, opens the video, and exits only after the video is visible and advancing. Continue launches or adopts Playnite Fullscreen directly, then signals the host to keep tracking readiness behind the same overlay.
 
 See [Streaming setup](docs/STREAMING.md) for details and recovery guidance.
 

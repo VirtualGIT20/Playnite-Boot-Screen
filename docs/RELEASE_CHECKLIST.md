@@ -1,4 +1,4 @@
-# Release checklist — 0.6.0
+# Release checklist — 0.6.1
 
 ## Code and behavior
 
@@ -33,7 +33,7 @@
 
 ## Packaging
 
-- [ ] `scripts/verify-release.ps1 -Version 0.6.0` succeeds.
+- [ ] `scripts/verify-release.ps1 -Version 0.6.1` succeeds.
 - [ ] `scripts/pack.ps1 -Configuration Release` creates exactly one expected `.pext`.
 - [ ] Build and package contain no `.pdb`, source, temporary, or stale files.
 - [ ] SHA-256 file matches the package.
@@ -45,12 +45,12 @@
 - [ ] Repository description, topics, and license are set.
 - [ ] Private vulnerability reporting is enabled.
 - [ ] CI workflow succeeds.
-- [ ] Tag `v0.6.0` creates a release with `.pext` and checksum.
-- [ ] Release notes mention the theme-related black-screen diagnostic.
+- [ ] Tag `v0.6.1` creates a release with `.pext` and checksum.
+- [ ] Release notes describe the streaming foreground fix and confirm that existing Prep/Detached command strings remain valid.
 
 ## Playnite add-on database
 
 - [ ] GitHub release asset URL is live.
 - [ ] `distribution/installer.yaml` verifies with Toolbox.
 - [ ] `distribution/addon.yaml` verifies with Toolbox.
-- [ ] Add-on database pull request is opened under `addons/generic`.
+- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.6.1`; no database pull request is needed unless central metadata changes.

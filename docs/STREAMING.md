@@ -16,8 +16,8 @@ Copy the commands from the extension's **Streaming** tab.
 2. The host selects the target display, preferably matching the client resolution.
 3. The boot video is opened and must show reliable playback advancement.
 4. Prep exits, allowing the streaming session to continue opening.
-5. Detached sends Continue to the same host.
-6. The host launches Playnite Fullscreen behind the overlay.
+5. Detached/Continue launches or adopts Playnite Fullscreen directly.
+6. Continue signals the preload host, which adopts the Playnite process and keeps the overlay visible while tracking readiness.
 7. The overlay fades after Playnite passes the configured readiness rules.
 
 ## Existing Playnite Desktop instance

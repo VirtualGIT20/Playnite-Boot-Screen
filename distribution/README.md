@@ -1,16 +1,16 @@
-# Playnite add-on database submission
+# Playnite add-on database distribution
 
-These files are templates for the official Playnite add-on database.
+The official Playnite add-on database stores the add-on manifest, whose `InstallerManifestUrl` points to the raw `distribution/installer.yaml` on this repository's default branch.
 
-Before submitting:
+For a normal update of an already published add-on:
 
-1. publish the GitHub release and confirm the `.pext` URL in `installer.yaml`;
-2. confirm the raw URLs use the final repository owner and default branch;
-3. verify with Playnite Toolbox:
+1. publish the GitHub release and confirm the `.pext` URL used by the new package entry in `installer.yaml`;
+2. keep previous package entries in `installer.yaml` and add the new version at the top;
+3. verify both manifests with Playnite Toolbox:
 
 ```powershell
 Toolbox.exe verify installer .\distribution\installer.yaml
 Toolbox.exe verify addon .\distribution\addon.yaml
 ```
 
-Submit `addon.yaml` to the `addons/generic` directory of `JosefNemec/PlayniteAddonDatabase` through a pull request.
+No new pull request to `JosefNemec/PlayniteAddonDatabase` is required for each version because the existing store entry reads the external installer manifest. Submit a database pull request only for initial publication or when the central add-on metadata / `InstallerManifestUrl` changes.
