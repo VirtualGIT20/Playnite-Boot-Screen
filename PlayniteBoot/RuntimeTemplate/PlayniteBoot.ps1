@@ -412,6 +412,7 @@ function Get-CoordinationNames {
     $hash = Get-StableHash16 -Identity $Identity
 
     return [PSCustomObject]@{
+        SessionId = $hash
         LauncherMutex = "Local\PlayniteBoot_${hash}_Launcher"
         HostMutex = "Local\PlayniteBoot_${hash}_Host"
         ReadyEvent = "Local\PlayniteBoot_${hash}_Ready"
@@ -526,6 +527,96 @@ function Test-StreamingCancellation {
     }
     catch {
         Write-Log "Could not read the streaming cancellation marker: $($_.Exception.Message)" 'WARN'
+        return $false
+    }
+}
+
+function Publish-StreamingHostProcessId {
+    try {
+        [IO.File]::WriteAllText(
+            $streamingHostPidPath,
+            [string]$PID,
+            [Text.Encoding]::ASCII
+        )
+    }
+    catch {
+        Write-Log "Could not publish the preload host PID: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+function Get-StreamingHostProcessId {
+    try {
+        if (-not (Test-Path -LiteralPath $streamingHostPidPath -PathType Leaf)) {
+            return $null
+        }
+
+        $rawProcessId = [IO.File]::ReadAllText($streamingHostPidPath, [Text.Encoding]::ASCII).Trim()
+        $hostProcessId = 0
+        if (-not [int]::TryParse($rawProcessId, [ref]$hostProcessId) -or $hostProcessId -le 0) {
+            return $null
+        }
+
+        $hostProcess = Get-Process -Id $hostProcessId -ErrorAction SilentlyContinue
+        if ($null -eq $hostProcess -or $hostProcess.HasExited) {
+            return $null
+        }
+
+        return $hostProcessId
+    }
+    catch {
+        Write-Log "Could not resolve the preload host PID: $($_.Exception.Message)" 'WARN'
+        return $null
+    }
+}
+
+function Remove-StreamingHostProcessId {
+    try {
+        if (-not (Test-Path -LiteralPath $streamingHostPidPath -PathType Leaf)) {
+            return
+        }
+
+        $publishedProcessId = [IO.File]::ReadAllText($streamingHostPidPath, [Text.Encoding]::ASCII).Trim()
+        if ($publishedProcessId -eq [string]$PID) {
+            Remove-Item -LiteralPath $streamingHostPidPath -Force
+        }
+    }
+    catch {
+        Write-Log "Could not remove the preload host PID marker: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+function Grant-ForegroundPermissionToProcess {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$ProcessId
+    )
+
+    try {
+        if ($null -eq ('PlayniteBootForegroundNative' -as [type])) {
+            Add-Type @"
+using System.Runtime.InteropServices;
+
+public static class PlayniteBootForegroundNative
+{
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool AllowSetForegroundWindow(uint dwProcessId);
+}
+"@
+        }
+
+        $granted = [PlayniteBootForegroundNative]::AllowSetForegroundWindow([uint32]$ProcessId)
+        if ($granted) {
+            Write-Log "Foreground permission delegated to preload host PID $ProcessId before Continue exits."
+        }
+        else {
+            $lastError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
+            Write-Log "Could not delegate foreground permission to preload host PID ${ProcessId}: AllowSetForegroundWindow returned False (Win32 error $lastError)." 'WARN'
+        }
+
+        return $granted
+    }
+    catch {
+        Write-Log "Could not delegate foreground permission to preload host PID ${ProcessId}: $($_.Exception.Message)" 'WARN'
         return $false
     }
 }
@@ -681,6 +772,19 @@ function Invoke-ContinueCommand {
             return $false
         }
 
+        # Continue is the process with the fresh foreground-launch context.
+        # Delegate that right to the preload Host before launching Playnite, so
+        # the Host can still perform the final handoff if Playnite replaces its
+        # initial process during startup. Windows revokes this grant on later
+        # user input, which preserves an explicit user focus change.
+        $hostProcessId = Get-StreamingHostProcessId
+        if ($null -ne $hostProcessId) {
+            [void](Grant-ForegroundPermissionToProcess -ProcessId $hostProcessId)
+        }
+        else {
+            Write-Log 'The preload host PID was not available; foreground permission could not be delegated.' 'WARN'
+        }
+
         $continueProcess = Start-PlayniteFromContinue
         [void]$continueEvent.Set()
         Write-Log "Continue signal sent to the host after launching/adopting Playnite PID $($continueProcess.Id). The Detached command can exit; the host will track readiness."
@@ -700,6 +804,7 @@ function Invoke-ContinueCommand {
 }
 
 $coordinationNames = Get-CoordinationNames -Identity $ConfigPath
+$streamingHostPidPath = Join-Path ([IO.Path]::GetTempPath()) ("PlayniteBoot_$($coordinationNames.SessionId)_Host.pid")
 
 # Preload e Continue sono comandi brevi. Solo Standalone e Host proseguono fino
 # alla creazione dell'overlay WPF.
@@ -794,6 +899,8 @@ try {
         $readyEvent = New-CoordinationEvent -Name $coordinationNames.ReadyEvent
         $continueEvent = New-CoordinationEvent -Name $coordinationNames.ContinueEvent
         $stopEvent = New-CoordinationEvent -Name $coordinationNames.StopEvent
+        Publish-StreamingHostProcessId
+        Write-Log "Preload host PID $PID published for foreground handoff."
         Write-Log 'Preload host started and waiting to prepare the video.'
     }
 
@@ -1119,7 +1226,10 @@ public static class PlayniteBootNative
     function Activate-PlayniteWindow {
         param(
             [Parameter(Mandatory = $false)]
-            $Process
+            $Process,
+
+            [Parameter(Mandatory = $false)]
+            [string]$Phase = ''
         )
 
         if ($null -eq $Process) {
@@ -1136,8 +1246,12 @@ public static class PlayniteBootNative
             if ($windowHandle -ne [IntPtr]::Zero) {
                 # SW_RESTORE = 9. Ripristiniamo la finestra prima di chiedere il
                 # foreground, come nella baseline originale.
-                [void][PlayniteBootNative]::ShowWindowAsync($windowHandle, 9)
-                [void][PlayniteBootNative]::SetForegroundWindow($windowHandle)
+                $showResult = [PlayniteBootNative]::ShowWindowAsync($windowHandle, 9)
+                $foregroundResult = [PlayniteBootNative]::SetForegroundWindow($windowHandle)
+
+                if (-not [string]::IsNullOrWhiteSpace($Phase)) {
+                    Write-Log "Foreground handoff [$Phase] for Playnite Fullscreen PID $($Process.Id): ShowWindowAsync=$showResult; SetForegroundWindow=$foregroundResult."
+                }
             }
         }
         catch {
@@ -1445,6 +1559,8 @@ public static class PlayniteBootNative
         VideoPlaybackWatch = [Diagnostics.Stopwatch]::new()
         PreloadReadySignaled = $false
         LaunchStarted = $false
+        StreamingInitialProcessId = $null
+        StreamingPidRolloverLogged = $false
     }
 
     $uninstallAltF4Hook = {
@@ -1842,7 +1958,7 @@ public static class PlayniteBootNative
         }
 
         if (-not $state.UserYieldedForeground) {
-            Activate-PlayniteWindow -Process $candidateProcess
+            Activate-PlayniteWindow -Process $candidateProcess -Phase 'pre-fade'
         }
 
         if ($settings.FadeOutMilliseconds -le 0) {
@@ -1965,6 +2081,7 @@ public static class PlayniteBootNative
                 $state.StartWatch.Restart()
 
                 if ($null -ne $state.Process) {
+                    $state.StreamingInitialProcessId = [int]$state.Process.Id
                     Write-Log "Continue signal received: adopting Playnite Fullscreen PID $($state.Process.Id) launched by the Detached command."
                 }
                 else {
@@ -2000,6 +2117,19 @@ public static class PlayniteBootNative
             $candidateProcess = Get-RunningFullscreenProcess
             if ($null -ne $candidateProcess) {
                 $state.Process = $candidateProcess
+
+                if ($Mode -eq 'Host') {
+                    $recoveredProcessId = [int]$candidateProcess.Id
+                    if ($null -eq $state.StreamingInitialProcessId) {
+                        $state.StreamingInitialProcessId = $recoveredProcessId
+                    }
+                    elseif (-not $state.StreamingPidRolloverLogged -and
+                        $recoveredProcessId -ne [int]$state.StreamingInitialProcessId) {
+
+                        $state.StreamingPidRolloverLogged = $true
+                        Write-Log "Playnite PID rollover detected: initially adopted PID $($state.StreamingInitialProcessId); current PID ${recoveredProcessId}." 'WARN'
+                    }
+                }
             }
         }
 
@@ -2186,7 +2316,7 @@ public static class PlayniteBootNative
     if ($state.WindowWasReady -and
         -not $state.UserYieldedForeground -and
         -not $state.BootCancelled) {
-        Activate-PlayniteWindow -Process $trackedProcess
+        Activate-PlayniteWindow -Process $trackedProcess -Phase 'post-overlay'
     }
 
     if ($state.BootCancelled) {
@@ -2202,6 +2332,10 @@ catch {
     throw
 }
 finally {
+    if ($Mode -eq 'Host') {
+        Remove-StreamingHostProcessId
+    }
+
     # =========================================================================
     # 7. Cleanup
     # =========================================================================
