@@ -4,6 +4,10 @@ All notable changes are documented here. Versions follow the Playnite extension 
 
 ## [Unreleased]
 
+### Fixed
+
+- Streaming startup now delegates foreground permission from Detached/Continue to the preload Host before Continue exits, so the Host can perform the final Playnite foreground handoff even when Fullscreen is replaced by a new PID during startup.
+
 ## [0.6.1] - 2026-08-25
 
 ### Fixed
