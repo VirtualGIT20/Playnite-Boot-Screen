@@ -1,12 +1,13 @@
-# Playnite Boot Screen 0.6.1
+# Playnite Boot Screen 0.6.2
 
-This maintenance release fixes foreground handling when Playnite Fullscreen is launched through streaming Prep/Detached commands.
+This maintenance release hardens streaming foreground handling for the rare case where Playnite Fullscreen replaces its initially launched process during startup.
 
 Highlights:
-- Detached/Continue now launches Playnite Fullscreen directly, preserving the normal Windows foreground launch context;
-- the preload Host adopts the launched Playnite PID and keeps the boot overlay visible until Playnite is ready;
-- fixes Playnite Fullscreen sometimes remaining behind a terminal or other foreground application after the overlay closes;
+- Detached/Continue delegates foreground permission to the preload Host before exiting;
+- the Host keeps tracking Playnite if the initially launched PID is replaced during startup;
+- the final Playnite window receives foreground handoff attempts immediately before and after the boot-overlay fade;
+- explicit Alt+Tab/yield behavior is preserved, so the launcher does not reclaim focus after the user intentionally switches away;
 - existing Prep and Detached command strings remain unchanged;
-- runtime updated to 1.0.5.
+- runtime updated to 1.0.6.
 
 Existing shortcuts, custom media, settings, and streaming configuration remain compatible.
