@@ -1,5 +1,12 @@
 AddonId: PlayniteBoot_71b5c099-3c25-4fe7-b26f-1262c7f0e138
 Packages:
+  - Version: 0.6.2
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-09-02
+    PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.6.2/Playnite-Boot-Screen-v0.6.2.pext
+    Changelog:
+      - Preserve the final Playnite foreground handoff when Fullscreen replaces its initially launched process during streaming startup.
+
   - Version: 0.6.1
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-08-25
