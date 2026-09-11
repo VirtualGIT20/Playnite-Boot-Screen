@@ -341,6 +341,12 @@ namespace PlayniteBoot
                 // Follow Playnite is selected later.
                 settings.MonitorFallback = settings.Monitor;
             }
+            if (settings.SettingsVersion < 3)
+            {
+                // The Desktop -> Fullscreen boot transition is enabled by default
+                // for both new and existing installations.
+                settings.EnableDesktopFullscreenSwitch = true;
+            }
 
             settings.SettingsVersion = PlayniteBootSettingsData.CurrentSettingsVersion;
 
@@ -753,6 +759,7 @@ namespace PlayniteBoot
             b.AppendLine("Config version: " + RuntimeConfigWriter.CurrentConfigVersion);
             b.AppendLine("Mode: " + (Settings.WaitForVideoEnd ? "waitForVideoEnd" : "readyAndMinimumDuration"));
             b.AppendLine("Streaming preload: " + (Settings.Streaming != null && Settings.Streaming.Enabled ? "enabled" : "disabled"));
+            b.AppendLine("Desktop -> Fullscreen boot: " + (Settings.EnableDesktopFullscreenSwitch ? "enabled" : "disabled"));
             b.AppendLine("Runtime installed: " + YesNo(File.Exists(plugin.Paths.ScriptPath) && File.Exists(plugin.Paths.ConfigPath)));
             b.AppendLine("Video exists: " + YesNo(videoExists));
             b.AppendLine("Desktop shortcut: " + YesNo(plugin.ShortcutExists(Settings, ShortcutLocation.Desktop)));

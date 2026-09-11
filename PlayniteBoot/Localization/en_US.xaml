@@ -42,10 +42,12 @@
     <sys:String x:Key="LOCPlayniteBootCheckWaitForVideoEnd">Wait for the video to finish before revealing Playnite</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckLoopVideo">Loop the video</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckHideCursor">Hide the mouse cursor</sys:String>
+    <sys:String x:Key="LOCPlayniteBootCheckDesktopFullscreenSwitch">Show the boot screen when switching from Desktop to Fullscreen</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckMute">Mute video audio</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckEnableLog">Enable runtime logging</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckStreamingEnabled">Enable streaming preload integration</sys:String>
 
+    <sys:String x:Key="LOCPlayniteBootTipDesktopFullscreenSwitch">Covers Playnite's built-in Desktop to Fullscreen transition with the configured boot video.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipWaitForVideoEnd">Playnite starts in the background immediately, but the overlay fades only after Playnite is ready and the video reaches its natural end.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipLoopVideo">Looping is unavailable while waiting for the natural end of the video.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipMinimumDuration">Ignored while waiting for the complete video.</sys:String>

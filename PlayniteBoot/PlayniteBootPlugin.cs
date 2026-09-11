@@ -18,6 +18,7 @@ namespace PlayniteBoot
         private readonly RuntimeInstaller runtimeInstaller;
         private readonly RuntimeConfigWriter configWriter;
         private readonly ShortcutService shortcutService;
+        private readonly DesktopFullscreenSwitchService desktopFullscreenSwitchService;
         private readonly object runtimeOperationLock = new object();
 
         public override Guid Id { get; } = Guid.Parse("71b5c099-3c25-4fe7-b26f-1262c7f0e138");
@@ -34,6 +35,9 @@ namespace PlayniteBoot
             configWriter = new RuntimeConfigWriter(Paths, PlayniteApi.Paths.ConfigurationPath);
             shortcutService = new ShortcutService(Paths);
             SettingsViewModel = new PlayniteBootSettingsViewModel(this);
+            desktopFullscreenSwitchService = new DesktopFullscreenSwitchService(
+                Paths,
+                () => SettingsViewModel.Settings.EnableDesktopFullscreenSwitch);
 
             Properties = new GenericPluginProperties
             {
@@ -53,6 +57,22 @@ namespace PlayniteBoot
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
+            if (PlayniteApi.ApplicationInfo.Mode == ApplicationMode.Desktop)
+            {
+                try
+                {
+                    var appWindow = PlayniteApi.Dialogs.GetCurrentAppWindow();
+                    if (!desktopFullscreenSwitchService.Attach(appWindow))
+                    {
+                        logger.Warn(ProductName + " could not attach Desktop-to-Fullscreen switch handling to the Playnite window.");
+                    }
+                }
+                catch (Exception exception)
+                {
+                    logger.Error(exception, ProductName + " failed to attach Desktop-to-Fullscreen switch handling.");
+                }
+            }
+
             // Take a snapshot on Playnite's UI thread, then perform disk work in
             // the background. All runtime mutations are serialized by the lock.
             var settingsSnapshot = Serialization.GetClone(SettingsViewModel.Settings);
@@ -67,6 +87,11 @@ namespace PlayniteBoot
                     logger.Error(exception, ProductName + " runtime initialization failed.");
                 }
             });
+        }
+
+        public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
+        {
+            desktopFullscreenSwitchService.Detach();
         }
 
         public RuntimeInstallResult PrepareRuntime(PlayniteBootSettingsData settings, bool forceUpdate)

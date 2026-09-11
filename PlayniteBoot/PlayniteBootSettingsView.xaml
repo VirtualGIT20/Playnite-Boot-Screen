@@ -26,6 +26,7 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelVideoFile}"
@@ -73,6 +74,10 @@
                                 <CheckBox Grid.Row="5" Grid.Column="1"
                                           Content="{DynamicResource LOCPlayniteBootCheckHideCursor}"
                                           IsChecked="{Binding Settings.HideMouseCursor}" Margin="6,5" />
+                                <CheckBox Grid.Row="6" Grid.Column="1"
+                                          Content="{DynamicResource LOCPlayniteBootCheckDesktopFullscreenSwitch}"
+                                          IsChecked="{Binding Settings.EnableDesktopFullscreenSwitch}" Margin="6,5"
+                                          ToolTip="{DynamicResource LOCPlayniteBootTipDesktopFullscreenSwitch}" />
                             </Grid>
                         </GroupBox>
 

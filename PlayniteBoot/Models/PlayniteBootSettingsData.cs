@@ -5,7 +5,7 @@ namespace PlayniteBoot.Models
 {
     public class PlayniteBootSettingsData : ObservableObject
     {
-        public const int CurrentSettingsVersion = 2;
+        public const int CurrentSettingsVersion = 3;
 
         private int settingsVersion;
         private string playniteExecutable = "auto";
@@ -27,6 +27,7 @@ namespace PlayniteBoot.Models
         private int fadeInMilliseconds = 80;
         private int fadeOutMilliseconds = 400;
         private bool hideMouseCursor = true;
+        private bool enableDesktopFullscreenSwitch = true;
         private bool logEnabled = true;
         private string shortcutName = "Playnite Fullscreen";
         private StreamingSettings streaming = new StreamingSettings();
@@ -81,6 +82,7 @@ namespace PlayniteBoot.Models
         public int FadeInMilliseconds { get => fadeInMilliseconds; set => SetValue(ref fadeInMilliseconds, value); }
         public int FadeOutMilliseconds { get => fadeOutMilliseconds; set => SetValue(ref fadeOutMilliseconds, value); }
         public bool HideMouseCursor { get => hideMouseCursor; set => SetValue(ref hideMouseCursor, value); }
+        public bool EnableDesktopFullscreenSwitch { get => enableDesktopFullscreenSwitch; set => SetValue(ref enableDesktopFullscreenSwitch, value); }
         public bool LogEnabled { get => logEnabled; set => SetValue(ref logEnabled, value); }
         public string ShortcutName { get => shortcutName; set => SetValue(ref shortcutName, value); }
         public StreamingSettings Streaming { get => streaming; set => SetValue(ref streaming, value); }

@@ -25,8 +25,19 @@ param(
     [string]$ConfigPath,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet('Standalone', 'Preload', 'Continue', 'Host')]
-    [string]$Mode = 'Standalone'
+    [ValidateSet('Standalone', 'Preload', 'Continue', 'Host', 'Switch')]
+    [string]$Mode = 'Standalone',
+
+    # Switch is an internal mode used by the Playnite Desktop plugin hook.
+    # Playnite Desktop owns the transition; the bootstrap and this runtime only
+    # cover it until the Fullscreen window is ready.
+    [Parameter(Mandatory = $false)]
+    [long]$SwitchStartUtcTicks = 0,
+
+    # Set only by the lightweight SwitchBootstrap.ps1 path. The bootstrap
+    # already owns a rendered black cover and has released Playnite Desktop.
+    [Parameter(Mandatory = $false)]
+    [switch]$SwitchBootstrapActive
 )
 
 Set-StrictMode -Version 2.0
@@ -241,6 +252,21 @@ function Find-PlayniteFullscreenExecutable {
 
 function Get-RunningFullscreenProcess {
     $processes = @(Get-Process -Name 'Playnite.FullscreenApp' -ErrorAction SilentlyContinue)
+
+    # During Desktop -> Fullscreen switching, ignore stale/orphaned Fullscreen
+    # processes that predate the Closing callback which armed this overlay.
+    if ($Mode -eq 'Switch' -and $SwitchStartUtcTicks -gt 0 -and $processes.Count -gt 0) {
+        $minimumStartTicks = $SwitchStartUtcTicks - (250 * [TimeSpan]::TicksPerMillisecond)
+        $processes = @($processes | Where-Object {
+            try {
+                $_.StartTime.ToUniversalTime().Ticks -ge $minimumStartTicks
+            }
+            catch {
+                $false
+            }
+        })
+    }
+
     if ($processes.Count -eq 0) {
         return $null
     }
@@ -1266,10 +1292,14 @@ public static class PlayniteBootNative
     }
 
     $existingProcess = Get-RunningFullscreenProcess
-    if ($null -ne $existingProcess) {
+    if ($null -ne $existingProcess -and $Mode -ne 'Switch') {
         Write-Log 'Playnite Fullscreen is already running. No new boot overlay will be shown.'
         Activate-PlayniteWindow -Process $existingProcess
         exit 0
+    }
+
+    if ($Mode -eq 'Switch' -and $null -ne $existingProcess) {
+        Write-Log "Switch bootstrap found Playnite Fullscreen PID $($existingProcess.Id) already starting. It will be adopted by the readiness tracker."
     }
 
     # Parametri generali. I valori e i limiti sono gli stessi della baseline.
@@ -1303,7 +1333,12 @@ public static class PlayniteBootNative
         throw 'Invalid configuration: loopVideo and waitForVideoEnd cannot both be enabled.'
     }
 
-    $playniteExecutable = Find-PlayniteFullscreenExecutable -ConfiguredPath $settings.PlayniteExecutable -BaseDirectory $baseDirectory
+    $playniteExecutable = $null
+    if ($Mode -ne 'Switch') {
+        # Switch mode never starts Playnite itself. Skipping executable discovery
+        # also avoids unnecessary registry probing on the critical switch path.
+        $playniteExecutable = Find-PlayniteFullscreenExecutable -ConfiguredPath $settings.PlayniteExecutable -BaseDirectory $baseDirectory
+    }
 
     Add-Type -AssemblyName PresentationFramework
     Add-Type -AssemblyName PresentationCore
@@ -1529,7 +1564,7 @@ public static class PlayniteBootNative
     # Stato condiviso dagli handler WPF. Le chiavi sono inizializzate in un
     # unico punto per rendere esplicito il ciclo di vita dell'overlay.
     $state = @{
-        Process = $null
+        Process = $(if ($Mode -eq 'Switch') { $existingProcess } else { $null })
         ReadySince = $null
         ReadyProcessId = $null
         ReadyWindowHandle = [IntPtr]::Zero
@@ -1627,6 +1662,31 @@ public static class PlayniteBootNative
         $state.PreloadReadySignaled = $true
         [void]$readyEvent.Set()
         Write-Log 'Preload-ready signal sent: the video is visible and advancing.'
+    }
+
+    $closeSwitchBootstrapOverlay = {
+        if ($Mode -ne 'Switch' -or -not $SwitchBootstrapActive) {
+            return
+        }
+
+        try {
+            $bootstrapVariable = Get-Variable -Name 'PlayniteBootSwitchBootstrapForm' -Scope Global -ErrorAction SilentlyContinue
+            if ($null -eq $bootstrapVariable -or $null -eq $bootstrapVariable.Value) {
+                return
+            }
+
+            $bootstrapForm = $bootstrapVariable.Value
+            if (-not $bootstrapForm.IsDisposed) {
+                $bootstrapForm.Hide()
+                $bootstrapForm.Close()
+                $bootstrapForm.Dispose()
+            }
+            $global:PlayniteBootSwitchBootstrapForm = $null
+            Write-Log 'Switch bootstrap cover released after the main WPF overlay rendered.'
+        }
+        catch {
+            Write-Log "Could not release the switch bootstrap cover: $($_.Exception.Message)" 'WARN'
+        }
     }
 
     $revealVideo = {
@@ -2264,6 +2324,10 @@ public static class PlayniteBootNative
 
     $window.Add_ContentRendered({
         try {
+            # The lightweight bootstrap is already covering the target display.
+            # Replace it only after this normal WPF overlay has rendered black.
+            & $closeSwitchBootstrapOverlay
+
             if ($settings.HideMouseCursor) {
                 [System.Windows.Forms.Cursor]::Hide()
                 $script:cursorHidden = $true
@@ -2283,6 +2347,17 @@ public static class PlayniteBootNative
             if ($Mode -eq 'Host') {
                 $state.PreloadWatch.Restart()
                 Write-Log "Preload overlay displayed. Waiting for video-ready and then Continue for up to $($streamingSettings.PreloadAbandonTimeoutMilliseconds) ms."
+            }
+            elseif ($Mode -eq 'Switch') {
+                # Playnite Desktop owns the transition and launches Fullscreen
+                # after the Closing handler returns. The bootstrap cover has
+                # already released Desktop, so this runtime only tracks readiness.
+                $state.LaunchStarted = $true
+                $state.StartWatch.Restart()
+                Write-Log 'Desktop-to-Fullscreen switch overlay displayed. Waiting for Playnite Desktop to launch Fullscreen behind it.'
+                if ($SwitchBootstrapActive) {
+                    Write-Log 'Desktop was already released by the switch bootstrap cover.'
+                }
             }
             else {
                 & $startPlaynite
@@ -2342,6 +2417,22 @@ finally {
 
     if ($cursorHidden) {
         try { [System.Windows.Forms.Cursor]::Show() } catch {}
+    }
+
+    if ($Mode -eq 'Switch' -and $SwitchBootstrapActive) {
+        try {
+            $bootstrapVariable = Get-Variable -Name 'PlayniteBootSwitchBootstrapForm' -Scope Global -ErrorAction SilentlyContinue
+            if ($null -ne $bootstrapVariable -and $null -ne $bootstrapVariable.Value) {
+                $bootstrapForm = $bootstrapVariable.Value
+                if (-not $bootstrapForm.IsDisposed) {
+                    $bootstrapForm.Close()
+                    $bootstrapForm.Dispose()
+                }
+                $global:PlayniteBootSwitchBootstrapForm = $null
+            }
+        }
+        catch {
+        }
     }
 
     if ($launcherMutexAcquired -and $null -ne $launcherMutex) {
