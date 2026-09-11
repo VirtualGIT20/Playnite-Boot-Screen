@@ -87,6 +87,27 @@ if ($failedRuntimeBehaviorChecks.Count -gt 0) {
     throw 'Required runtime behavior is missing from the runtime script.'
 }
 
+Write-Host 'Checking Desktop-to-Fullscreen integration...'
+$switchBootstrapPath = Join-Path $root 'PlayniteBoot\RuntimeTemplate\SwitchBootstrap.ps1'
+$switchServicePath = Join-Path $root 'PlayniteBoot\Services\DesktopFullscreenSwitchService.cs'
+$runtimeInstallerPath = Join-Path $root 'PlayniteBoot\Services\RuntimeInstaller.cs'
+foreach ($requiredPath in @($switchBootstrapPath, $switchServicePath, $runtimeInstallerPath)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw "Required Desktop-to-Fullscreen integration file not found: $requiredPath"
+    }
+}
+$switchBootstrapSource = Get-Content -LiteralPath $switchBootstrapPath -Raw -Encoding UTF8
+$switchServiceSource = Get-Content -LiteralPath $switchServicePath -Raw -Encoding UTF8
+$runtimeInstallerSource = Get-Content -LiteralPath $runtimeInstallerPath -Raw -Encoding UTF8
+if ($runtimeScript -notmatch "ValidateSet\('Standalone', 'Preload', 'Continue', 'Host', 'Switch'\)" -or
+    $runtimeScript -notmatch 'SwitchBootstrapActive' -or
+    $switchBootstrapSource -notmatch 'SwitchBootstrapActive' -or
+    $switchServiceSource -notmatch 'SwitchToFullscreenMode' -or
+    $runtimeInstallerSource -notmatch 'FilesHaveSameContent' -or
+    $runtimeInstallerSource -notmatch 'SwitchBootstrap\.ps1') {
+    throw 'Desktop-to-Fullscreen integration or content-aware runtime synchronization is incomplete.'
+}
+Write-Host 'Desktop-to-Fullscreen integration: OK'
 Write-Host 'Checking managed video library integration...'
 $videoLibraryPath = Join-Path $root 'PlayniteBoot\Services\VideoLibraryService.cs'
 $configWriterPath = Join-Path $root 'PlayniteBoot\Services\RuntimeConfigWriter.cs'

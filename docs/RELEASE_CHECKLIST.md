@@ -1,4 +1,4 @@
-# Release checklist — 0.6.1
+# Release checklist — 0.7.0
 
 ## Code and behavior
 
@@ -7,6 +7,10 @@
 - [ ] Settings save and cancel correctly.
 - [ ] Direct cold launch succeeds.
 - [ ] Launch while Playnite Desktop is already open switches to Fullscreen successfully.
+- [ ] Playnite's built-in Desktop → Fullscreen command shows the configured boot screen when the new option is enabled.
+- [ ] Fullscreen → Desktop → Fullscreen can be repeated and the boot transition still works.
+- [ ] Disabling the Desktop → Fullscreen option leaves Playnite's native switch untouched.
+- [ ] Normal Playnite Desktop exit does not trigger the switch overlay.
 - [ ] Wait-for-video-end mode succeeds.
 - [ ] Alt+F4 closes the overlay and stops the Playnite Fullscreen process started by the boot sequence.
 - [ ] Alt+F4 during Preload prevents a later Continue command from using the standalone fallback.
@@ -22,6 +26,7 @@
 - [ ] Desktop and Start shortcuts can be created, renamed, and removed.
 - [ ] Invalid or modified shortcut state cannot escape the Desktop or Start menu directories.
 - [ ] Runtime log rotates to `PlayniteBoot.log.1` after 2 MiB.
+- [ ] With `VERSION.txt` unchanged at `1.0.7`, modifying a managed installed runtime file is repaired automatically on the next Playnite start.
 
 ## Display matrix
 
@@ -33,24 +38,26 @@
 
 ## Packaging
 
-- [ ] `scripts/verify-release.ps1 -Version 0.6.1` succeeds.
+- [ ] `scripts/verify-release.ps1 -Version 0.7.0` succeeds.
 - [ ] `scripts/pack.ps1 -Configuration Release` creates exactly one expected `.pext`.
+- [ ] Build output and `.pext` both contain `RuntimeTemplate\SwitchBootstrap.ps1`.
 - [ ] Build and package contain no `.pdb`, source, temporary, or stale files.
 - [ ] SHA-256 file matches the package.
 - [ ] The `.pext` installs on a clean Playnite profile.
 - [ ] The `.pext` installs over the maintainer's local development installation without losing settings or custom media.
+- [ ] Updating an existing installation synchronizes managed runtime files and preserves custom media/configuration.
 
 ## GitHub
 
 - [ ] Repository description, topics, and license are set.
 - [ ] Private vulnerability reporting is enabled.
 - [ ] CI workflow succeeds.
-- [ ] Tag `v0.6.1` creates a release with `.pext` and checksum.
-- [ ] Release notes describe the streaming foreground fix and confirm that existing Prep/Detached command strings remain valid.
+- [ ] Tag `v0.7.0` creates a release with `.pext` and checksum.
+- [ ] Release notes describe the Desktop → Fullscreen transition, fail-open behavior, and content-aware runtime synchronization.
 
 ## Playnite add-on database
 
 - [ ] GitHub release asset URL is live.
 - [ ] `distribution/installer.yaml` verifies with Toolbox.
 - [ ] `distribution/addon.yaml` verifies with Toolbox.
-- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.6.1`; no database pull request is needed unless central metadata changes.
+- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.7.0`; no database pull request is needed unless central metadata changes.

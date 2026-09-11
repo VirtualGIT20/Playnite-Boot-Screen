@@ -63,6 +63,7 @@ $requiredFiles = @(
     'Localization\en_US.xaml',
     'Localization\it_IT.xaml',
     'RuntimeTemplate\PlayniteBoot.ps1',
+    'RuntimeTemplate\SwitchBootstrap.ps1',
     'RuntimeTemplate\Launch-PlayniteBoot.vbs',
     'RuntimeTemplate\Install-Shortcut.ps1',
     'RuntimeTemplate\Test-Configuration.ps1',

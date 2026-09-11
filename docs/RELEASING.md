@@ -6,7 +6,7 @@ Update all version references:
 
 - `PlayniteBoot/extension.yaml`
 - `PlayniteBoot/Properties/AssemblyInfo.cs`
-- `PlayniteBoot/RuntimeTemplate/VERSION.txt` only when managed runtime files change
+- `PlayniteBoot/RuntimeTemplate/VERSION.txt` when managed runtime files change (diagnostic metadata; managed files are synchronized by content)
 - `CHANGELOG.md`
 - `RELEASE_NOTES.md`
 - `distribution/installer.yaml`

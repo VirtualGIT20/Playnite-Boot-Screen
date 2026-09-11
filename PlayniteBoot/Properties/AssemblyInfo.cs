@@ -8,5 +8,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright © VirtualGIT20 2026")]
 [assembly: ComVisible(false)]
 [assembly: Guid("29f3bcc1-12ed-423e-8c61-d0eb0218eec3")]
-[assembly: AssemblyVersion("0.6.2.0")]
-[assembly: AssemblyFileVersion("0.6.2.0")]
+[assembly: AssemblyVersion("0.7.0.0")]
+[assembly: AssemblyFileVersion("0.7.0.0")]
