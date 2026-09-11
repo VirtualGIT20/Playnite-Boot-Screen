@@ -4,7 +4,7 @@
 
 ![Anteprima di Playnite Boot Screen](docs/assets/boot-screen.png)
 
-Playnite Boot Screen è un'estensione Generic Plugin per Playnite che mostra un video di avvio a schermo intero mentre Playnite Fullscreen viene caricato in background.
+Playnite Boot Screen è un'estensione Generic Plugin per Playnite che mostra un video di avvio a schermo intero mentre Playnite Fullscreen viene caricato in background e può coprire anche la transizione integrata di Playnite da Desktop a Fullscreen.
 
 ## Demo
 
@@ -16,6 +16,7 @@ https://github.com/user-attachments/assets/fc1d7d9a-7a05-4b44-a43e-959a9b4a4fad
 - Possibilità di seguire il display Fullscreen scelto da Playnite oppure selezionare manualmente il monitor, con rilevamento sicuro in configurazioni multi-monitor.
 - Adattamento, fade, mute e volume da 0 a 100 configurabili.
 - Possibilità di mostrare Playnite appena pronto oppure attendere la fine naturale del video.
+- Copertura della transizione integrata Desktop → Fullscreen con il video configurato, attiva di default e disattivabile dalle impostazioni.
 - Runtime gestito fuori dalla directory sostituita durante gli aggiornamenti dell'estensione.
 - Nome personalizzabile per i collegamenti Desktop e menu Start.
 - Comandi Preload e Continue nella schermata Streaming.
@@ -78,6 +79,7 @@ I file persistenti vengono salvati nella directory dati dell’estensione:
 ```
 
 La directory di installazione dell’estensione può essere sostituita senza eliminare video personalizzati, configurazione o log.
+I file runtime gestiti vengono sincronizzati in base al contenuto all’avvio di Playnite, mentre video personalizzati, configurazione e log restano intatti.
 
 Copia i file `.mp4`, `.mkv`, `.webm`, `.avi` o `.mov` direttamente in `Runtime\media`, quindi usa **Aggiorna elenco** nelle impostazioni. I file esterni alla cartella restano selezionabili tramite **Sfoglia esterno…**.
 

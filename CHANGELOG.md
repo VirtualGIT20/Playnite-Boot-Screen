@@ -4,6 +4,22 @@ All notable changes are documented here. Versions follow the Playnite extension 
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-11
+
+### Added
+
+- The configured boot screen can now cover Playnite's built-in Desktop-to-Fullscreen transition; the option is enabled by default and can be disabled in settings.
+- A lightweight on-demand bootstrap cover bridges the Desktop window closing to the existing boot overlay without keeping a helper process resident.
+
+### Changed
+
+- Managed runtime files are now synchronized by content on Playnite startup, so runtime updates and repairs no longer depend only on `VERSION.txt`.
+- Runtime updated to 1.0.7.
+
+### Compatibility
+
+- Desktop-to-Fullscreen interception fails open: if the bootstrap cover cannot be armed, Playnite continues its native transition normally.
+
 ## [0.6.2] - 2026-09-02
 
 ### Fixed

@@ -1,5 +1,13 @@
 AddonId: PlayniteBoot_71b5c099-3c25-4fe7-b26f-1262c7f0e138
 Packages:
+  - Version: 0.7.0
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-09-11
+    PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.7.0/Playnite-Boot-Screen-v0.7.0.pext
+    Changelog:
+      - Show the configured boot screen during Playnite's native Desktop-to-Fullscreen transition.
+      - Add a lightweight on-demand handoff cover with a safe fail-open fallback and no resident helper.
+      - Synchronize managed runtime files by content so updates no longer depend only on the runtime version marker.
   - Version: 0.6.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-02
