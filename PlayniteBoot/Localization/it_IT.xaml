@@ -42,10 +42,12 @@
     <sys:String x:Key="LOCPlayniteBootCheckWaitForVideoEnd">Attendi la fine del video prima di mostrare Playnite</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckLoopVideo">Ripeti il video</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckHideCursor">Nascondi il cursore del mouse</sys:String>
+    <sys:String x:Key="LOCPlayniteBootCheckDesktopFullscreenSwitch">Mostra la schermata di avvio quando passi da Desktop a Fullscreen</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckMute">Disattiva l'audio del video</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckEnableLog">Abilita log del runtime</sys:String>
     <sys:String x:Key="LOCPlayniteBootCheckStreamingEnabled">Abilita integrazione preload streaming</sys:String>
 
+    <sys:String x:Key="LOCPlayniteBootTipDesktopFullscreenSwitch">Copre la transizione integrata di Playnite da Desktop a Fullscreen con il video di avvio configurato.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipWaitForVideoEnd">Playnite parte subito in background, ma l'overlay sfuma solo quando Playnite è pronta e il video raggiunge la fine naturale.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipLoopVideo">La ripetizione non è disponibile quando si attende la fine naturale del video.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipMinimumDuration">Ignorata quando si attende il video completo.</sys:String>
