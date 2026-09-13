@@ -4,6 +4,16 @@ All notable changes are documented here. Versions follow the Playnite extension 
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-13
+
+### Fixed
+
+- The Desktop-to-Fullscreen bootstrap cover now uses the monitor's physical display bounds when Windows DPI virtualization reports scaled WinForms coordinates, preventing a smaller black rectangle from appearing in the top-left corner before the boot video on high-DPI and virtual displays.
+
+### Changed
+
+- Runtime updated to 1.0.8.
+
 ## [0.7.0] - 2026-09-11
 
 ### Added
