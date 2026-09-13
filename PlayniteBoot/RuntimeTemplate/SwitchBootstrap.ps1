@@ -35,6 +35,104 @@ function Get-PropertyValue {
     return $property.Value
 }
 
+function Initialize-BootstrapNativeMethods {
+    if ('PlayniteBootSwitchBootstrap.Native' -as [type]) {
+        return
+    }
+
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+namespace PlayniteBootSwitchBootstrap
+{
+    public static class Native
+    {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct DEVMODE
+        {
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string dmDeviceName;
+            public ushort dmSpecVersion;
+            public ushort dmDriverVersion;
+            public ushort dmSize;
+            public ushort dmDriverExtra;
+            public uint dmFields;
+            public int dmPositionX;
+            public int dmPositionY;
+            public uint dmDisplayOrientation;
+            public uint dmDisplayFixedOutput;
+            public short dmColor;
+            public short dmDuplex;
+            public short dmYResolution;
+            public short dmTTOption;
+            public short dmCollate;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string dmFormName;
+            public ushort dmLogPixels;
+            public uint dmBitsPerPel;
+            public uint dmPelsWidth;
+            public uint dmPelsHeight;
+            public uint dmDisplayFlags;
+            public uint dmDisplayFrequency;
+            public uint dmICMMethod;
+            public uint dmICMIntent;
+            public uint dmMediaType;
+            public uint dmDitherType;
+            public uint dmReserved1;
+            public uint dmReserved2;
+            public uint dmPanningWidth;
+            public uint dmPanningHeight;
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool EnumDisplaySettingsEx(
+            string lpszDeviceName,
+            int iModeNum,
+            ref DEVMODE lpDevMode,
+            uint dwFlags);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr dpiContext);
+    }
+}
+'@
+}
+
+function Get-PhysicalDisplayBounds {
+    param(
+        [Parameter(Mandatory = $true)]$Screen
+    )
+
+    try {
+        Initialize-BootstrapNativeMethods
+
+        $mode = New-Object PlayniteBootSwitchBootstrap.Native+DEVMODE
+        $mode.dmSize = [uint16][Runtime.InteropServices.Marshal]::SizeOf([type][PlayniteBootSwitchBootstrap.Native+DEVMODE])
+
+        $enumCurrentSettings = -1
+        $ok = [PlayniteBootSwitchBootstrap.Native]::EnumDisplaySettingsEx(
+            [string]$Screen.DeviceName,
+            $enumCurrentSettings,
+            [ref]$mode,
+            0)
+
+        if (-not $ok -or $mode.dmPelsWidth -eq 0 -or $mode.dmPelsHeight -eq 0) {
+            return $null
+        }
+
+        return New-Object System.Drawing.Rectangle(
+            [int]$mode.dmPositionX,
+            [int]$mode.dmPositionY,
+            [int]$mode.dmPelsWidth,
+            [int]$mode.dmPelsHeight)
+    }
+    catch {
+        return $null
+    }
+}
+
 function Select-BootstrapScreen {
     param(
         [Parameter(Mandatory = $true)]$Config,
@@ -134,19 +232,53 @@ try {
     }
 
     $bounds = $selectedScreen.Bounds
-    $form = New-Object System.Windows.Forms.Form
-    $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
-    $form.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
-    $form.Bounds = $bounds
-    $form.BackColor = [System.Drawing.Color]::Black
-    $form.TopMost = $true
-    $form.ShowInTaskbar = $false
-    $form.ControlBox = $false
+    $physicalBounds = Get-PhysicalDisplayBounds -Screen $selectedScreen
+    $previousDpiContext = [IntPtr]::Zero
+    $usePhysicalBounds = $false
 
-    $form.Show()
-    $form.BringToFront()
-    $form.Refresh()
-    [System.Windows.Forms.Application]::DoEvents()
+    if ($null -ne $physicalBounds) {
+        try {
+            Initialize-BootstrapNativeMethods
+            $dpiAwarenessContextPerMonitorAwareV2 = [IntPtr](-4)
+            $previousDpiContext = [PlayniteBootSwitchBootstrap.Native]::SetThreadDpiAwarenessContext(
+                $dpiAwarenessContextPerMonitorAwareV2)
+            $usePhysicalBounds = ($previousDpiContext -ne [IntPtr]::Zero)
+        }
+        catch {
+            $previousDpiContext = [IntPtr]::Zero
+            $usePhysicalBounds = $false
+        }
+    }
+
+    try {
+        if ($usePhysicalBounds) {
+            $bounds = $physicalBounds
+        }
+
+        $form = New-Object System.Windows.Forms.Form
+        $form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::None
+        $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
+        $form.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
+        $form.Bounds = $bounds
+        $form.BackColor = [System.Drawing.Color]::Black
+        $form.TopMost = $true
+        $form.ShowInTaskbar = $false
+        $form.ControlBox = $false
+
+        $form.Show()
+        $form.BringToFront()
+        $form.Refresh()
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    finally {
+        if ($usePhysicalBounds -and $previousDpiContext -ne [IntPtr]::Zero) {
+            try {
+                [void][PlayniteBootSwitchBootstrap.Native]::SetThreadDpiAwarenessContext($previousDpiContext)
+            }
+            catch {
+            }
+        }
+    }
 
     $readyEvent = [System.Threading.EventWaitHandle]::OpenExisting($SwitchReadyEventName)
     [void]$readyEvent.Set()
