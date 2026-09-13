@@ -66,7 +66,7 @@
     <sys:String x:Key="LOCPlayniteBootTipLoopVideo">La ripetizione non è disponibile quando si attende la fine naturale del video.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipMinimumDuration">Ritardo di fallback usato solo quando il video configurato manca o non può essere riprodotto.</sys:String>
     <sys:String x:Key="LOCPlayniteBootAcceptedFormats">Formati accettati: {0}</sys:String>
-    <sys:String x:Key="LOCPlayniteBootTipAcceptedFormats">La riproduzione dipende dai codec disponibili in Windows.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTipAcceptedFormats">La riproduzione dipende dai codec disponibili in Windows. I file WebM vengono gestiti automaticamente tramite modalità di compatibilità.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipMonitorSelection">Segui Playnite legge in sola lettura la scelta del display Fullscreen. Se non è disponibile, viene usata l’ultima scelta manuale del monitor.</sys:String>
     <sys:String x:Key="LOCPlayniteBootTipPlayniteExecutable">Mantieni “auto” salvo installazioni di Playnite in percorsi non standard.</sys:String>
 

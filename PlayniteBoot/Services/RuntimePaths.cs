@@ -11,6 +11,7 @@ namespace PlayniteBoot.Services
             RuntimeTemplateDirectory = Path.Combine(extensionInstallPath, "RuntimeTemplate");
             RuntimeDirectory = Path.Combine(pluginDataPath, "Runtime");
             MediaDirectory = Path.Combine(RuntimeDirectory, "media");
+            VideoCompatibilityCacheDirectory = Path.Combine(RuntimeDirectory, "cache", "video-compat");
             LogsDirectory = Path.Combine(RuntimeDirectory, "logs");
             ConfigPath = Path.Combine(RuntimeDirectory, "config.json");
             ScriptPath = Path.Combine(RuntimeDirectory, "PlayniteBoot.ps1");
@@ -26,6 +27,7 @@ namespace PlayniteBoot.Services
         public string RuntimeTemplateDirectory { get; }
         public string RuntimeDirectory { get; }
         public string MediaDirectory { get; }
+        public string VideoCompatibilityCacheDirectory { get; }
         public string LogsDirectory { get; }
         public string ConfigPath { get; }
         public string ScriptPath { get; }

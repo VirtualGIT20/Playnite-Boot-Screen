@@ -80,6 +80,8 @@ Persistent files are stored under Playnite's extension data directory:
 ├── Runtime\
 │   ├── config.json
 │   ├── media\
+│   ├── cache\
+│   │   └── video-compat\
 │   └── logs\
 └── shortcut-state.json
 ```
@@ -87,7 +89,7 @@ Persistent files are stored under Playnite's extension data directory:
 The extension installation directory can be safely replaced during updates without deleting custom media, configuration, or logs.
 Managed runtime files are synchronized by content when Playnite starts, while custom media, configuration, and logs remain untouched.
 
-Place `.mp4`, `.mkv`, `.webm`, `.avi`, or `.mov` files directly in `Runtime\media`, then use **Refresh list** in the settings page. Files outside this folder can still be selected with **Browse external…**.
+Place `.mp4`, `.mkv`, `.webm`, `.avi`, or `.mov` files directly in `Runtime\media`, then use **Refresh list** in the settings page. Files outside this folder can still be selected with **Browse external…**. WebM files are transparently exposed to the Windows media pipeline through a cached `.mkv` compatibility alias; the original file is never renamed or modified. The compatibility cache keeps only the alias for the currently selected WebM source and is cleared when a non-WebM video is selected.
 
 ## Build
 

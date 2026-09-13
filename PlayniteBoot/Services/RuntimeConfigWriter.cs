@@ -13,21 +13,30 @@ namespace PlayniteBoot.Services
 
         private readonly RuntimePaths paths;
         private readonly string playniteConfigurationPath;
+        private readonly VideoCompatibilityService videoCompatibility;
         private readonly JavaScriptSerializer serializer = new JavaScriptSerializer();
 
-        public RuntimeConfigWriter(RuntimePaths paths, string playniteConfigurationPath)
+        public RuntimeConfigWriter(
+            RuntimePaths paths,
+            string playniteConfigurationPath,
+            VideoCompatibilityService videoCompatibility)
         {
             this.paths = paths;
             this.playniteConfigurationPath = playniteConfigurationPath ?? string.Empty;
+            this.videoCompatibility = videoCompatibility ?? throw new ArgumentNullException(nameof(videoCompatibility));
         }
 
-        public void Write(PlayniteBootSettingsData settings)
+        public VideoCompatibilityResult Write(PlayniteBootSettingsData settings)
         {
             Directory.CreateDirectory(paths.RuntimeDirectory);
             Directory.CreateDirectory(paths.MediaDirectory);
             Directory.CreateDirectory(paths.LogsDirectory);
 
-            var videoPath = NormalizeVideoPath(settings.VideoPath);
+            var sourceVideoPath = string.IsNullOrWhiteSpace(settings.VideoPath)
+                ? Path.GetFullPath(paths.DefaultVideoPath)
+                : Path.GetFullPath(settings.VideoPath);
+            var compatibilityResult = videoCompatibility.Resolve(sourceVideoPath);
+            var videoPath = NormalizeVideoPath(compatibilityResult.PlaybackPath);
             var json = BuildJson(settings, videoPath);
             var tempPath = paths.ConfigPath + ".tmp";
             var backupPath = paths.ConfigPath + ".bak";
@@ -51,23 +60,25 @@ namespace PlayniteBoot.Services
             {
                 File.Move(tempPath, paths.ConfigPath);
             }
+
+            return compatibilityResult;
         }
 
-        private string NormalizeVideoPath(string configuredPath)
+        private string NormalizeVideoPath(string playbackPath)
         {
-            var fullPath = string.IsNullOrWhiteSpace(configuredPath)
+            var fullPath = string.IsNullOrWhiteSpace(playbackPath)
                 ? Path.GetFullPath(paths.DefaultVideoPath)
-                : Path.GetFullPath(configuredPath);
+                : Path.GetFullPath(playbackPath);
 
-            var mediaRoot = Path.GetFullPath(paths.MediaDirectory)
+            var runtimeRoot = Path.GetFullPath(paths.RuntimeDirectory)
                 .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) +
                 Path.DirectorySeparatorChar;
 
-            if (fullPath.StartsWith(mediaRoot, StringComparison.OrdinalIgnoreCase))
+            if (fullPath.StartsWith(runtimeRoot, StringComparison.OrdinalIgnoreCase))
             {
-                var relativeName = fullPath.Substring(mediaRoot.Length)
+                var relativePath = fullPath.Substring(runtimeRoot.Length)
                     .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-                return @".\media\" + relativeName;
+                return @".\" + relativePath;
             }
 
             return fullPath;

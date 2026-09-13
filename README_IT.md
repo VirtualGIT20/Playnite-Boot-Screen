@@ -74,6 +74,8 @@ I file persistenti vengono salvati nella directory dati dell’estensione:
 ├── Runtime\
 │   ├── config.json
 │   ├── media\
+│   ├── cache\
+│   │   └── video-compat\
 │   └── logs\
 └── shortcut-state.json
 ```
@@ -81,7 +83,7 @@ I file persistenti vengono salvati nella directory dati dell’estensione:
 La directory di installazione dell’estensione può essere sostituita senza eliminare video personalizzati, configurazione o log.
 I file runtime gestiti vengono sincronizzati in base al contenuto all’avvio di Playnite, mentre video personalizzati, configurazione e log restano intatti.
 
-Copia i file `.mp4`, `.mkv`, `.webm`, `.avi` o `.mov` direttamente in `Runtime\media`, quindi usa **Aggiorna elenco** nelle impostazioni. I file esterni alla cartella restano selezionabili tramite **Sfoglia esterno…**.
+Copia i file `.mp4`, `.mkv`, `.webm`, `.avi` o `.mov` direttamente in `Runtime\media`, quindi usa **Aggiorna elenco** nelle impostazioni. I file esterni alla cartella restano selezionabili tramite **Sfoglia esterno…**. I file WebM vengono esposti in modo trasparente alla pipeline multimediale di Windows tramite un alias `.mkv` in cache; il file originale non viene mai rinominato né modificato. La cache di compatibilità conserva solo l'alias relativo al WebM attualmente selezionato e viene svuotata quando si seleziona un video non WebM.
 
 ## Build e pacchetto
 

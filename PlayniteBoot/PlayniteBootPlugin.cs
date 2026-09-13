@@ -32,7 +32,8 @@ namespace PlayniteBoot
             Paths = new RuntimePaths(GetPluginUserDataPath(), installPath);
             Commands = new CommandGenerator(Paths);
             runtimeInstaller = new RuntimeInstaller(Paths);
-            configWriter = new RuntimeConfigWriter(Paths, PlayniteApi.Paths.ConfigurationPath);
+            var videoCompatibilityService = new VideoCompatibilityService(Paths);
+            configWriter = new RuntimeConfigWriter(Paths, PlayniteApi.Paths.ConfigurationPath, videoCompatibilityService);
             shortcutService = new ShortcutService(Paths);
             SettingsViewModel = new PlayniteBootSettingsViewModel(this);
             desktopFullscreenSwitchService = new DesktopFullscreenSwitchService(
@@ -99,7 +100,8 @@ namespace PlayniteBoot
             lock (runtimeOperationLock)
             {
                 var result = runtimeInstaller.EnsureInstalled(forceUpdate);
-                configWriter.Write(settings);
+                var compatibilityResult = configWriter.Write(settings);
+                LogVideoCompatibility(compatibilityResult);
                 logger.Info($"{ProductName} runtime ready at {Paths.RuntimeDirectory}. Version {result.Version}.");
                 return result;
             }
@@ -109,7 +111,8 @@ namespace PlayniteBoot
         {
             lock (runtimeOperationLock)
             {
-                configWriter.Write(settings);
+                var compatibilityResult = configWriter.Write(settings);
+                LogVideoCompatibility(compatibilityResult);
             }
         }
 
@@ -118,7 +121,8 @@ namespace PlayniteBoot
             lock (runtimeOperationLock)
             {
                 var result = runtimeInstaller.EnsureInstalled(false);
-                configWriter.Write(settings);
+                var compatibilityResult = configWriter.Write(settings);
+                LogVideoCompatibility(compatibilityResult);
                 logger.Info($"{ProductName} runtime ready at {Paths.RuntimeDirectory}. Version {result.Version}.");
                 return shortcutService.Create(
                     location,
@@ -132,6 +136,24 @@ namespace PlayniteBoot
             lock (runtimeOperationLock)
             {
                 return shortcutService.Remove(location, settings.ShortcutName);
+            }
+        }
+
+        private static void LogVideoCompatibility(VideoCompatibilityResult result)
+        {
+            if (result == null)
+            {
+                return;
+            }
+
+            if (result.CacheCreated)
+            {
+                logger.Info($"{ProductName} prepared the WebM compatibility alias using {result.Strategy}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(result.Warning))
+            {
+                logger.Warn($"{ProductName} could not prepare the WebM compatibility alias; direct playback will be attempted. {result.Warning}");
             }
         }
 

@@ -68,6 +68,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\CommandGenerator.cs" />
     <Compile Include="Services\RuntimeConfigWriter.cs" />
+    <Compile Include="Services\VideoCompatibilityService.cs" />
     <Compile Include="Services\RuntimeInstaller.cs" />
     <Compile Include="Services\RuntimePaths.cs" />
     <Compile Include="Services\VideoLibraryService.cs" />
