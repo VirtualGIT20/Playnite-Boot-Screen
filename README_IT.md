@@ -1,6 +1,6 @@
 # Playnite Boot Screen
 
-[English](README.md) · [Changelog](CHANGELOG.md) · [Risoluzione problemi](docs/TROUBLESHOOTING.md)
+[English](README.md) · [Changelog](CHANGELOG.md) · [Risoluzione problemi](docs/TROUBLESHOOTING.md) · [Contratto integrazione](docs/INTEGRATION.md)
 
 ![Anteprima di Playnite Boot Screen](docs/assets/boot-screen.png)
 
@@ -20,6 +20,7 @@ https://github.com/user-attachments/assets/fc1d7d9a-7a05-4b44-a43e-959a9b4a4fad
 - Runtime gestito fuori dalla directory sostituita durante gli aggiornamenti dell'estensione.
 - Nome personalizzabile per i collegamenti Desktop e menu Start.
 - Comandi Preload e Continue nella schermata Streaming.
+- Marker runtime pubblico per temi/helper che devono evitare intro di avvio duplicate.
 - Interfaccia in inglese e italiano.
 - Log locali limitati a 2 MiB con un solo backup.
 - Nessuna telemetria, account o servizio di rete.
@@ -64,6 +65,12 @@ Abilita il preload nella scheda **Streaming** e copia:
 2. **Detached command — Continue**.
 
 Non è richiesto un comando Undo. Preload prepara il decoder, quindi mette in pausa e riavvolge il video mantenendo nero l’overlay; Continue fa ripartire la riproduzione dall’inizio mentre l’host segue la readiness di Playnite. Consulta [Configurazione streaming](docs/STREAMING.md) per i dettagli.
+
+## Integrazione con temi e helper
+
+Mentre Playnite Boot Screen sta coprendo attivamente l'avvio, pubblica l'evento Windows segnalato `Local\PlayniteBootScreen.StartupIntroHandled.v1`. Temi e plugin helper possono usare questo marker per evitare di riprodurre una seconda intro nello stesso avvio senza leggere le impostazioni di Playnite Boot Screen. Il marker è indipendente dal video selezionato e dal comportamento di fine video.
+
+Consulta il [contratto di integrazione](docs/INTEGRATION.md) per semantica esatta ed esempio C# lato consumer.
 
 ## Dati runtime
 

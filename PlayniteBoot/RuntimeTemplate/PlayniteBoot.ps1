@@ -434,6 +434,26 @@ function Write-Log {
 }
 
 $settings = $null
+$startupIntroHandledMarkerName = 'Local\PlayniteBootScreen.StartupIntroHandled.v1'
+
+function Publish-StartupIntroHandledMarker {
+    $createdNew = $false
+    try {
+        $marker = [System.Threading.EventWaitHandle]::new(
+            $true,
+            [System.Threading.EventResetMode]::ManualReset,
+            $startupIntroHandledMarkerName,
+            [ref]$createdNew
+        )
+        [void]$marker.Set()
+        Write-Log "Startup intro integration marker published: $startupIntroHandledMarkerName."
+        return $marker
+    }
+    catch {
+        Write-Log "Could not publish startup intro integration marker '$startupIntroHandledMarkerName': $($_.Exception.Message)" 'WARN'
+        return $null
+    }
+}
 
 $configVersion = [int](Get-ConfigValue -Config $config -Name 'configVersion' -DefaultValue 0)
 $streamingConfig = Get-ConfigValue -Config $config -Name 'streaming' -DefaultValue $null
@@ -935,6 +955,7 @@ $hostMutexAcquired = $false
 $readyEvent = $null
 $continueEvent = $null
 $stopEvent = $null
+$startupIntroHandledEvent = $null
 $cursorHidden = $false
 
 try {
@@ -1336,6 +1357,11 @@ public static class PlayniteBootNative
     if ($Mode -eq 'Switch' -and $null -ne $existingProcess) {
         Write-Log "Switch bootstrap found Playnite Fullscreen PID $($existingProcess.Id) already starting. It will be adopted by the readiness tracker."
     }
+
+    # Public integration contract for theme/helper plugins. The event is
+    # signaled only while this runtime instance is actively covering Playnite
+    # startup. Consumers must open, check and immediately dispose their handle.
+    $startupIntroHandledEvent = Publish-StartupIntroHandledMarker
 
     # Parametri generali. I valori e i limiti sono gli stessi della baseline.
     $settings = [PSCustomObject]@{
@@ -2496,6 +2522,12 @@ catch {
 finally {
     if ($Mode -eq 'Host') {
         Remove-StreamingHostProcessId
+    }
+
+    if ($null -ne $startupIntroHandledEvent) {
+        try { [void]$startupIntroHandledEvent.Reset() } catch {}
+        try { $startupIntroHandledEvent.Dispose() } catch {}
+        $startupIntroHandledEvent = $null
     }
 
     # =========================================================================
