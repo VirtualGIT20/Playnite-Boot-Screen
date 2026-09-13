@@ -63,7 +63,7 @@ Abilita il preload nella scheda **Streaming** e copia:
 1. **Prep command — Preload**;
 2. **Detached command — Continue**.
 
-Non è richiesto un comando Undo. Consulta [Configurazione streaming](docs/STREAMING.md) per i dettagli.
+Non è richiesto un comando Undo. Preload prepara il decoder, quindi mette in pausa e riavvolge il video mantenendo nero l’overlay; Continue fa ripartire la riproduzione dall’inizio mentre l’host segue la readiness di Playnite. Consulta [Configurazione streaming](docs/STREAMING.md) per i dettagli.
 
 ## Dati runtime
 

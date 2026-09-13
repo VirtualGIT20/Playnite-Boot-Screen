@@ -14,11 +14,11 @@ Copy the commands from the extension's **Streaming** tab.
 
 1. Prep starts a hidden PowerShell host.
 2. The host selects the target display, preferably matching the client resolution.
-3. The boot video is opened and must show reliable playback advancement.
-4. Prep exits, allowing the streaming session to continue opening.
+3. The boot video is opened and allowed to advance only long enough to validate that the decoder is producing frames.
+4. The host pauses the video, rewinds it to the beginning, and keeps the overlay black; Prep can then exit while the streaming session continues opening.
 5. Detached/Continue launches or adopts Playnite Fullscreen directly.
-6. Continue signals the preload host, which adopts the Playnite process and keeps the overlay visible while tracking readiness.
-7. The overlay fades after Playnite passes the configured readiness rules.
+6. Continue signals the preload host, which restarts the video from the beginning, adopts the Playnite process, and keeps the overlay visible while tracking readiness.
+7. The overlay fades after Playnite passes the configured readiness rules and the selected video-end policy allows it.
 
 ## Existing Playnite Desktop instance
 

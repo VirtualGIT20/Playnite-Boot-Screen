@@ -7,9 +7,9 @@
 
     - Standalone: mostra il video, avvia Playnite e dissolve l'overlay quando
       la finestra Fullscreen e stabile.
-    - Streaming: the Prep command uses Preload to prepare the video on the target
-      display; the Detached command uses Continue to launch Playnite directly,
-      while the Host keeps the same overlay visible until Playnite is ready.
+    - Streaming: the Prep command uses Preload to prime and rewind the video on
+      the target display; the Detached command uses Continue to launch Playnite
+      and restart playback from the beginning while the Host tracks readiness.
 
     La modalita Host e interna: viene avviata automaticamente da Preload e non
     deve essere configurata manualmente.
@@ -735,7 +735,7 @@ function Invoke-PreloadCommand {
         }
 
         if ($readyEvent.WaitOne($streamingSettings.PreloadReadyTimeoutMilliseconds)) {
-            Write-Log 'Preload is ready: the video is visible and advancing. The Prep command can exit.'
+            Write-Log 'Preload is ready: the video decoder is primed and rewound. The Prep command can exit.'
             return 0
         }
 
@@ -1624,6 +1624,8 @@ public static class PlayniteBootNative
         VideoReadyTimeoutLogged = $false
         VideoPlaybackWatch = [Diagnostics.Stopwatch]::new()
         PreloadReadySignaled = $false
+        PreloadPrepared = $false
+        StreamingPlaybackStarted = $false
         LaunchStarted = $false
         StreamingInitialProcessId = $null
         StreamingPidRolloverLogged = $false
@@ -1692,7 +1694,81 @@ public static class PlayniteBootNative
 
         $state.PreloadReadySignaled = $true
         [void]$readyEvent.Set()
-        Write-Log 'Preload-ready signal sent: the video is visible and advancing.'
+        Write-Log 'Preload-ready signal sent: the video decoder is primed and rewound to the beginning.'
+    }
+
+    $prepareStreamingPreload = {
+        if ($Mode -ne 'Host' -or
+            $state.LaunchStarted -or
+            $state.PreloadPrepared -or
+            -not $videoExists -or
+            $state.VideoFailed -or
+            $state.Closing) {
+            return
+        }
+
+        $preparedAtMilliseconds = [int]$media.Position.TotalMilliseconds
+        try {
+            $media.Pause()
+            $media.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $null)
+            $media.Opacity = 0.0
+            $media.Position = [TimeSpan]::Zero
+
+            $state.PreloadPrepared = $true
+            $state.VideoRevealed = $false
+            $state.VideoRevealedAt = $null
+            $state.VideoEnded = $false
+            $state.VideoEndFrameHeld = $false
+            $state.WaitingForVideoEndLogged = $false
+            $state.WaitingForPlayniteLogged = $false
+            $state.LastMediaPositionMs = -1
+            $state.AdvancingSamples = 0
+            $state.VideoPlaybackWatch.Reset()
+
+            Write-Log "Streaming preload prepared at ${preparedAtMilliseconds} ms; video paused and rewound to 0 ms."
+            & $signalPreloadReady
+        }
+        catch {
+            $state.VideoFailed = $true
+            Write-Log "Could not pause and rewind the streaming preload: $($_.Exception.Message). Continue will use the standalone fallback." 'WARN'
+        }
+    }
+
+    $startStreamingPlayback = {
+        if ($Mode -ne 'Host' -or
+            -not $state.LaunchStarted -or
+            $state.StreamingPlaybackStarted -or
+            -not $videoExists -or
+            $state.VideoFailed -or
+            $state.Closing) {
+            return
+        }
+
+        try {
+            $media.Pause()
+            $media.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $null)
+            $media.Opacity = 0.0
+            $media.Position = [TimeSpan]::Zero
+
+            $state.StreamingPlaybackStarted = $true
+            $state.VideoRevealed = $false
+            $state.VideoRevealedAt = $null
+            $state.VideoEnded = $false
+            $state.VideoEndFrameHeld = $false
+            $state.WaitingForVideoEndLogged = $false
+            $state.WaitingForPlayniteLogged = $false
+            $state.LastMediaPositionMs = -1
+            $state.AdvancingSamples = 0
+            $state.VideoReadyTimeoutLogged = $false
+            $state.VideoPlaybackWatch.Restart()
+
+            $media.Play()
+            Write-Log 'Continue signal received: starting the preloaded video again from 0 ms.'
+        }
+        catch {
+            $state.VideoFailed = $true
+            Write-Log "Could not restart the preloaded video from the beginning: $($_.Exception.Message). Using the Playnite-readiness fallback." 'WARN'
+        }
     }
 
     $closeSwitchBootstrapOverlay = {
@@ -1784,6 +1860,12 @@ public static class PlayniteBootNative
     $media.Add_MediaEnded({
         $state.VideoEnded = $true
 
+        if ($Mode -eq 'Host' -and -not $state.LaunchStarted) {
+            $state.VideoEnded = $false
+            & $prepareStreamingPreload
+            return
+        }
+
         if ($settings.VideoEndBehavior -eq 'loop' -and
             -not $state.PlayniteReady -and
             -not $state.Closing) {
@@ -1795,16 +1877,24 @@ public static class PlayniteBootNative
             return
         }
 
+        if ($state.PlayniteReady) {
+            # The decoder reached the natural end while Playnite is already
+            # ready. Do not seek backwards to synthesize a hold frame: that can
+            # re-render the penultimate frame for one UI cycle and look like a
+            # small snap at the end of short console-style intros. Fade the
+            # existing overlay immediately from the natural end instead.
+            Write-Log 'Video ended and Playnite is already ready. Starting fade-out from the natural end.'
+            & $closeOverlayWithFade
+            return
+        }
+
         & $holdLastVideoFrame
 
         if (-not $state.VideoRevealed -and $videoExists) {
             & $revealVideo
         }
 
-        if ($state.PlayniteReady) {
-            Write-Log 'Video ended and Playnite is already ready. Fade-out will start on the next UI cycle.'
-        }
-        elseif (-not $state.WaitingForPlayniteLogged) {
+        if (-not $state.WaitingForPlayniteLogged) {
             $state.WaitingForPlayniteLogged = $true
             Write-Log 'Video ended. Holding the final frame while waiting for Playnite.'
         }
@@ -2114,10 +2204,15 @@ public static class PlayniteBootNative
             return
         }
 
-        # Il video viene rivelato soltanto quando il clock avanza in piu
-        # campioni consecutivi: evita di mostrare il primo frame statico mentre
-        # Media Foundation inizializza il decoder.
-        if ($videoExists -and -not $state.VideoRevealed -and -not $state.VideoEnded) {
+        # Il clock deve avanzare in piu campioni consecutivi prima di mostrare
+        # il video. In Host, durante Prep, usiamo gli stessi campioni solo per
+        # scaldare/validare il decoder: poi mettiamo in pausa e torniamo a 0 ms.
+        # La timeline visibile parte soltanto dopo Continue.
+        $hostWaitingAfterPreload = $Mode -eq 'Host' -and -not $state.LaunchStarted -and $state.PreloadPrepared
+        if ($videoExists -and
+            -not $state.VideoRevealed -and
+            -not $state.VideoEnded -and
+            -not $hostWaitingAfterPreload) {
             if ($state.MediaOpened) {
                 $positionMilliseconds = [int]$media.Position.TotalMilliseconds
                 $lastPositionMilliseconds = [int]$state.LastMediaPositionMs
@@ -2134,7 +2229,12 @@ public static class PlayniteBootNative
 
                 if ($positionMilliseconds -ge $settings.VideoReadyPositionMilliseconds -and
                     $state.AdvancingSamples -ge $settings.VideoReadyAdvanceSamples) {
-                    & $revealVideo
+                    if ($Mode -eq 'Host' -and -not $state.LaunchStarted) {
+                        & $prepareStreamingPreload
+                    }
+                    else {
+                        & $revealVideo
+                    }
                 }
             }
 
@@ -2151,18 +2251,6 @@ public static class PlayniteBootNative
             }
         }
 
-        # Preload puo terminare solo dopo che il video e visibile per un breve
-        # intervallo, cosi lo stream non riceve un frame non ancora renderizzato.
-        if ($Mode -eq 'Host' -and
-            $state.VideoRevealed -and
-            -not $state.PreloadReadySignaled) {
-            $visibleMilliseconds = ([DateTime]::UtcNow - $state.VideoRevealedAt).TotalMilliseconds
-            $requiredVisibleMilliseconds = [Math]::Max(100, $settings.FadeInMilliseconds + 50)
-            if ($visibleMilliseconds -ge $requiredVisibleMilliseconds) {
-                & $signalPreloadReady
-            }
-        }
-
         # In Host il video viene preparato prima. Il Detached command Continue
         # avvia Playnite direttamente, cosi il processo nasce dal launcher che
         # Windows considera foreground; l'Host si limita ad adottarlo e seguirlo.
@@ -2171,6 +2259,7 @@ public static class PlayniteBootNative
                 $state.Process = Get-RunningFullscreenProcess
                 $state.LaunchStarted = $true
                 $state.StartWatch.Restart()
+                & $startStreamingPlayback
 
                 if ($null -ne $state.Process) {
                     $state.StreamingInitialProcessId = [int]$state.Process.Id
@@ -2344,7 +2433,7 @@ public static class PlayniteBootNative
             $timer.Start()
             if ($Mode -eq 'Host') {
                 $state.PreloadWatch.Restart()
-                Write-Log "Preload overlay displayed. Waiting for video-ready and then Continue for up to $($streamingSettings.PreloadAbandonTimeoutMilliseconds) ms."
+                Write-Log "Preload overlay displayed. Priming the video decoder, then waiting for Continue for up to $($streamingSettings.PreloadAbandonTimeoutMilliseconds) ms."
             }
             elseif ($Mode -eq 'Switch') {
                 # Playnite Desktop owns the transition and launches Fullscreen

@@ -6,7 +6,7 @@
     <sys:String x:Key="LOCPlayniteBootTabInstallation">Installazione e diagnostica</sys:String>
 
     <sys:String x:Key="LOCPlayniteBootIntroGeneral">Scegli un video di avvio dalla cartella multimediale gestita oppure seleziona un file esterno. Playnite può essere rilevato su qualsiasi monitor quando la finestra Fullscreen è pronta.</sys:String>
-    <sys:String x:Key="LOCPlayniteBootIntroStreaming">Per Sunshine, Apollo e fork compatibili: usa il primo comando come Prep e il secondo come Detached. Il video parte prima dello stream e mantiene coperto il desktop.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroStreaming">Per Sunshine, Apollo e fork compatibili: usa il primo comando come Prep e il secondo come Detached. Prep prepara il video mantenendo nero l’overlay; la riproduzione riparte dall’inizio quando viene eseguito Continue.</sys:String>
 
     <sys:String x:Key="LOCPlayniteBootGroupVideo">Video</sys:String>
     <sys:String x:Key="LOCPlayniteBootGroupPlayback">Riproduzione</sys:String>
