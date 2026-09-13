@@ -182,6 +182,41 @@ function Get-ClampedDouble {
     return $Value
 }
 
+function Resolve-VideoEndBehavior {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Config
+    )
+
+    $configuredBehavior = [string](Get-ConfigValue -Config $Config -Name 'videoEndBehavior' -DefaultValue '')
+    if (-not [string]::IsNullOrWhiteSpace($configuredBehavior)) {
+        $normalizedBehavior = $configuredBehavior.Trim().ToLowerInvariant()
+        if ($normalizedBehavior -in @('ready', 'wait', 'loop')) {
+            return $normalizedBehavior
+        }
+
+        Write-Log "Invalid videoEndBehavior '$configuredBehavior'. Falling back to 'ready'." 'WARN'
+        return 'ready'
+    }
+
+    # Config v2 and earlier used two booleans. Prefer wait if an invalid legacy
+    # combination enabled both, matching the settings migration in the plugin.
+    $legacyWait = [bool](Get-ConfigValue -Config $Config -Name 'waitForVideoEnd' -DefaultValue $false)
+    $legacyLoop = [bool](Get-ConfigValue -Config $Config -Name 'loopVideo' -DefaultValue $false)
+    if ($legacyWait) {
+        if ($legacyLoop) {
+            Write-Log 'Legacy config enables both waitForVideoEnd and loopVideo. Using wait behavior.' 'WARN'
+        }
+        return 'wait'
+    }
+
+    if ($legacyLoop) {
+        return 'loop'
+    }
+
+    return 'ready'
+}
+
 function Find-PlayniteFullscreenExecutable {
     param(
         [Parameter(Mandatory = $true)]
@@ -421,8 +456,8 @@ $streamingSettings = [PSCustomObject]@{
 if ($usingLegacyStreamingSection) {
     Write-Log 'Legacy config section vibepollo detected. It is supported for compatibility; save settings in the extension to migrate to streaming.' 'WARN'
 }
-if ($configVersion -gt 2) {
-    Write-Log "Config version $configVersion is newer than the supported version 2. Unknown options will be ignored." 'WARN'
+if ($configVersion -gt 3) {
+    Write-Log "Config version $configVersion is newer than the supported version 3. Unknown options will be ignored." 'WARN'
 }
 
 # =============================================================================
@@ -1311,8 +1346,7 @@ public static class PlayniteBootNative
         Monitor = [string](Get-ConfigValue -Config $config -Name 'monitor' -DefaultValue 'playnite')
         MonitorFallback = [string](Get-ConfigValue -Config $config -Name 'monitorFallback' -DefaultValue 'primary')
         VideoStretch = [string](Get-ConfigValue -Config $config -Name 'videoStretch' -DefaultValue 'UniformToFill')
-        LoopVideo = [bool](Get-ConfigValue -Config $config -Name 'loopVideo' -DefaultValue $false)
-        WaitForVideoEnd = [bool](Get-ConfigValue -Config $config -Name 'waitForVideoEnd' -DefaultValue $false)
+        VideoEndBehavior = Resolve-VideoEndBehavior -Config $config
         Mute = [bool](Get-ConfigValue -Config $config -Name 'mute' -DefaultValue $true)
         Volume = $(Get-ClampedDouble -Value ([double](Get-ConfigValue -Config $config -Name 'volume' -DefaultValue 0.0)) -Minimum 0.0 -Maximum 1.0)
 
@@ -1329,9 +1363,6 @@ public static class PlayniteBootNative
         HideMouseCursor = [bool](Get-ConfigValue -Config $config -Name 'hideMouseCursor' -DefaultValue $true)
     }
 
-    if ($settings.WaitForVideoEnd -and $settings.LoopVideo) {
-        throw 'Invalid configuration: loopVideo and waitForVideoEnd cannot both be enabled.'
-    }
 
     $playniteExecutable = $null
     if ($Mode -ne 'Switch') {
@@ -1736,7 +1767,7 @@ public static class PlayniteBootNative
             $media.Position = $holdPosition
             $media.Pause()
             $state.VideoEndFrameHeld = $true
-            Write-Log "Holding the final video frame at $([int]$holdPosition.TotalMilliseconds) ms while waiting for Playnite."
+            Write-Log "Holding the final video frame at $([int]$holdPosition.TotalMilliseconds) ms."
         }
         catch {
             try { $media.Pause() } catch {}
@@ -1751,18 +1782,19 @@ public static class PlayniteBootNative
     })
 
     $media.Add_MediaEnded({
-        if ($settings.LoopVideo -and -not $state.Closing) {
+        $state.VideoEnded = $true
+
+        if ($settings.VideoEndBehavior -eq 'loop' -and
+            -not $state.PlayniteReady -and
+            -not $state.Closing) {
+
+            $state.VideoEnded = $false
+            $state.VideoEndFrameHeld = $false
             $media.Position = [TimeSpan]::Zero
             $media.Play()
             return
         }
 
-        if (-not $settings.WaitForVideoEnd) {
-            $media.Pause()
-            return
-        }
-
-        $state.VideoEnded = $true
         & $holdLastVideoFrame
 
         if (-not $state.VideoRevealed -and $videoExists) {
@@ -2112,9 +2144,9 @@ public static class PlayniteBootNative
                 $state.VideoReadyTimeoutLogged = $true
                 Write-Log "The video did not show reliable advancement within $($settings.VideoReadyTimeoutMilliseconds) ms. Keeping the black background to avoid a frozen frame." 'WARN'
 
-                if ($settings.WaitForVideoEnd) {
+                if ($settings.VideoEndBehavior -eq 'wait') {
                     $state.VideoFailed = $true
-                    Write-Log 'Wait-for-video-end was disabled for this run because the decoder did not produce reliable playback.' 'WARN'
+                    Write-Log 'Wait behavior was disabled for this run because the decoder did not produce reliable playback.' 'WARN'
                 }
             }
         }
@@ -2217,105 +2249,71 @@ public static class PlayniteBootNative
             }
         }
 
-        if ($settings.WaitForVideoEnd) {
-            # In questa modalita la readiness diventa persistente: una volta
-            # riconosciuta Playnite, il timeout si ferma e l overlay puo restare
-            # attivo per tutta la durata di un video lungo.
-            if (-not $state.PlayniteReady) {
-                if ($windowIsReady) {
-                    if ($null -eq $state.ReadySince -or
-                        $state.ReadyProcessId -ne $candidateProcessId -or
-                        $state.ReadyWindowHandle -ne $candidateWindowHandle) {
+        # Readiness detection is shared by all video-end policies. Once the
+        # Fullscreen window is stable, only the selected playback policy decides
+        # whether the overlay can fade immediately or must keep covering Playnite.
+        if (-not $state.PlayniteReady) {
+            if ($windowIsReady) {
+                if ($null -eq $state.ReadySince -or
+                    $state.ReadyProcessId -ne $candidateProcessId -or
+                    $state.ReadyWindowHandle -ne $candidateWindowHandle) {
 
-                        $state.ReadySince = [DateTime]::UtcNow
-                        $state.ReadyProcessId = $candidateProcessId
-                        $state.ReadyWindowHandle = $candidateWindowHandle
-                        $coveragePercent = [Math]::Round($windowReadiness.Coverage * 100.0, 1)
-                        $playniteScreenName = $windowReadiness.Screen.DeviceName
-                        Write-Log "Fullscreen window detected for PID ${candidateProcessId} on ${playniteScreenName}: monitor coverage is ${coveragePercent}%."
-                        if ($playniteScreenName -ne $selectedScreen.DeviceName) {
-                            Write-Log "Playnite Fullscreen is on ${playniteScreenName} while the boot overlay is on $($selectedScreen.DeviceName). The overlay will close normally." 'WARN'
-                        }
-                    }
-
-                    $stableMilliseconds = ([DateTime]::UtcNow - $state.ReadySince).TotalMilliseconds
-                    if ($stableMilliseconds -ge $settings.ReadyStabilityMilliseconds) {
-                        $state.PlayniteReady = $true
-                        $state.WindowWasReady = $true
-                        Write-Log "Playnite is ready: the window was stable for $([int]$stableMilliseconds) ms. The startup timeout is no longer evaluated."
+                    $state.ReadySince = [DateTime]::UtcNow
+                    $state.ReadyProcessId = $candidateProcessId
+                    $state.ReadyWindowHandle = $candidateWindowHandle
+                    $coveragePercent = [Math]::Round($windowReadiness.Coverage * 100.0, 1)
+                    $playniteScreenName = $windowReadiness.Screen.DeviceName
+                    Write-Log "Fullscreen window detected for PID ${candidateProcessId} on ${playniteScreenName}: monitor coverage is ${coveragePercent}%."
+                    if ($playniteScreenName -ne $selectedScreen.DeviceName) {
+                        Write-Log "Playnite Fullscreen is on ${playniteScreenName} while the boot overlay is on $($selectedScreen.DeviceName). The overlay will close normally." 'WARN'
                     }
                 }
-                else {
-                    $state.ReadySince = $null
-                    $state.ReadyProcessId = $null
-                    $state.ReadyWindowHandle = [IntPtr]::Zero
+
+                $stableMilliseconds = ([DateTime]::UtcNow - $state.ReadySince).TotalMilliseconds
+                if ($stableMilliseconds -ge $settings.ReadyStabilityMilliseconds) {
+                    $state.PlayniteReady = $true
+                    $state.WindowWasReady = $true
+                    Write-Log "Playnite is ready: the window was stable for $([int]$stableMilliseconds) ms."
                 }
             }
+            else {
+                $state.ReadySince = $null
+                $state.ReadyProcessId = $null
+                $state.ReadyWindowHandle = [IntPtr]::Zero
+            }
+        }
 
-            if ($state.PlayniteReady) {
-                $videoCompletionRequired = $videoExists -and -not $state.VideoFailed
-                if ($videoCompletionRequired) {
-                    if ($state.VideoEnded) {
-                        Write-Log 'Completion conditions met: Playnite is ready and the video has ended.'
-                        & $closeOverlayWithFade
-                        return
-                    }
+        if ($state.PlayniteReady) {
+            $videoPlayable = $videoExists -and -not $state.VideoFailed
 
-                    if (-not $state.WaitingForVideoEndLogged) {
-                        $state.WaitingForVideoEndLogged = $true
-                        Write-Log 'Playnite is ready. Waiting for the video to end naturally before fade-out.'
-                    }
-                }
-                elseif ($state.StartWatch.ElapsedMilliseconds -ge $settings.MinimumVideoMilliseconds) {
+            if (-not $videoPlayable) {
+                if ($state.StartWatch.ElapsedMilliseconds -ge $settings.MinimumVideoMilliseconds) {
                     Write-Log 'Video is missing or not playable. Applying the Playnite-readiness fallback.' 'WARN'
                     & $closeOverlayWithFade
                     return
                 }
             }
+            elseif ($settings.VideoEndBehavior -eq 'wait') {
+                if ($state.VideoEnded) {
+                    Write-Log 'Completion conditions met: Playnite is ready and the video has ended.'
+                    & $closeOverlayWithFade
+                    return
+                }
 
-            if (-not $state.PlayniteReady -and
-                $state.StartWatch.Elapsed.TotalSeconds -ge $settings.StartTimeoutSeconds) {
-                $state.ExitCode = 2
-                Write-Log "Timed out after $($settings.StartTimeoutSeconds) seconds while waiting for the Fullscreen window." 'ERROR'
-                & $closeOverlayWithFade
-            }
-
-            return
-        }
-
-        # Comportamento storico: rimane identico quando waitForVideoEnd e false.
-        if ($windowIsReady) {
-            if ($null -eq $state.ReadySince -or
-                $state.ReadyProcessId -ne $candidateProcessId -or
-                $state.ReadyWindowHandle -ne $candidateWindowHandle) {
-
-                $state.ReadySince = [DateTime]::UtcNow
-                $state.ReadyProcessId = $candidateProcessId
-                $state.ReadyWindowHandle = $candidateWindowHandle
-                $coveragePercent = [Math]::Round($windowReadiness.Coverage * 100.0, 1)
-                $playniteScreenName = $windowReadiness.Screen.DeviceName
-                Write-Log "Fullscreen window detected for PID ${candidateProcessId} on ${playniteScreenName}: monitor coverage is ${coveragePercent}%."
-                if ($playniteScreenName -ne $selectedScreen.DeviceName) {
-                    Write-Log "Playnite Fullscreen is on ${playniteScreenName} while the boot overlay is on $($selectedScreen.DeviceName). The overlay will close normally." 'WARN'
+                if (-not $state.WaitingForVideoEndLogged) {
+                    $state.WaitingForVideoEndLogged = $true
+                    Write-Log 'Playnite is ready. Waiting for the video to end naturally before fade-out.'
                 }
             }
-
-            $stableMilliseconds = ([DateTime]::UtcNow - $state.ReadySince).TotalMilliseconds
-            if ($stableMilliseconds -ge $settings.ReadyStabilityMilliseconds -and
-                $state.StartWatch.ElapsedMilliseconds -ge $settings.MinimumVideoMilliseconds) {
-                $state.WindowWasReady = $true
-                Write-Log "Playnite is ready: the window was stable for $([int]$stableMilliseconds) ms."
+            else {
+                Write-Log "Completion conditions met: Playnite is ready; video end behavior is '$($settings.VideoEndBehavior)'."
                 & $closeOverlayWithFade
                 return
             }
         }
-        else {
-            $state.ReadySince = $null
-            $state.ReadyProcessId = $null
-            $state.ReadyWindowHandle = [IntPtr]::Zero
-        }
 
-        if ($state.StartWatch.Elapsed.TotalSeconds -ge $settings.StartTimeoutSeconds) {
+        if (-not $state.PlayniteReady -and
+            $state.StartWatch.Elapsed.TotalSeconds -ge $settings.StartTimeoutSeconds) {
             $state.ExitCode = 2
             Write-Log "Timed out after $($settings.StartTimeoutSeconds) seconds while waiting for the Fullscreen window." 'ERROR'
             & $closeOverlayWithFade
@@ -2340,7 +2338,7 @@ public static class PlayniteBootNative
                 $media.Play()
             }
 
-            Write-Log "Video: $($settings.VideoPath); adaptive ready position $($settings.VideoReadyPositionMilliseconds) ms; samples $($settings.VideoReadyAdvanceSamples); fade-in $($settings.FadeInMilliseconds) ms; fade-out $($settings.FadeOutMilliseconds) ms; wait for video end $($settings.WaitForVideoEnd)."
+            Write-Log "Video: $($settings.VideoPath); adaptive ready position $($settings.VideoReadyPositionMilliseconds) ms; samples $($settings.VideoReadyAdvanceSamples); fade-in $($settings.FadeInMilliseconds) ms; fade-out $($settings.FadeOutMilliseconds) ms; end behavior $($settings.VideoEndBehavior)."
             Write-Log "Monitor: $($selectedScreen.DeviceName), bounds $($screenBounds.Left),$($screenBounds.Top) $($screenBounds.Width)x$($screenBounds.Height); selection '$selectedMonitorMode'."
 
             $timer.Start()

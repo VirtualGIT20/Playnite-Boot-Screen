@@ -3,9 +3,38 @@ using System.Collections.Generic;
 
 namespace PlayniteBoot.Models
 {
+    public static class VideoEndBehaviors
+    {
+        public const string Ready = "ready";
+        public const string Wait = "wait";
+        public const string Loop = "loop";
+
+        public static bool IsValid(string value)
+        {
+            return string.Equals(value, Ready, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, Wait, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, Loop, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string Normalize(string value)
+        {
+            if (string.Equals(value, Wait, StringComparison.OrdinalIgnoreCase))
+            {
+                return Wait;
+            }
+
+            if (string.Equals(value, Loop, StringComparison.OrdinalIgnoreCase))
+            {
+                return Loop;
+            }
+
+            return Ready;
+        }
+    }
+
     public class PlayniteBootSettingsData : ObservableObject
     {
-        public const int CurrentSettingsVersion = 3;
+        public const int CurrentSettingsVersion = 4;
 
         private int settingsVersion;
         private string playniteExecutable = "auto";
@@ -14,8 +43,13 @@ namespace PlayniteBoot.Models
         private string monitor = "playnite";
         private string monitorFallback = "primary";
         private string videoStretch = "UniformToFill";
+        private string videoEndBehavior = VideoEndBehaviors.Ready;
+
+        // Kept only so settings saved by 0.7.1 and earlier can be migrated safely.
+        // New UI/runtime code uses VideoEndBehavior exclusively.
         private bool loopVideo;
         private bool waitForVideoEnd;
+
         private bool mute = true;
         private double volume = 1.0;
         private int minimumVideoMilliseconds = 900;
@@ -47,10 +81,9 @@ namespace PlayniteBoot.Models
         public string Monitor { get => monitor; set => SetValue(ref monitor, value); }
         public string MonitorFallback { get => monitorFallback; set => SetValue(ref monitorFallback, value); }
         public string VideoStretch { get => videoStretch; set => SetValue(ref videoStretch, value); }
-        public bool LoopVideo { get => loopVideo; set => SetValue(ref loopVideo, value); }
+        public string VideoEndBehavior { get => videoEndBehavior; set => SetValue(ref videoEndBehavior, value); }
 
-        // When enabled, the overlay remains visible until both Playnite is ready
-        // and the configured video reaches its natural end.
+        public bool LoopVideo { get => loopVideo; set => SetValue(ref loopVideo, value); }
         public bool WaitForVideoEnd { get => waitForVideoEnd; set => SetValue(ref waitForVideoEnd, value); }
 
         public bool Mute { get => mute; set => SetValue(ref mute, value); }
@@ -71,7 +104,6 @@ namespace PlayniteBoot.Models
                 OnPropertyChanged();
             }
         }
-
 
         public int MinimumVideoMilliseconds { get => minimumVideoMilliseconds; set => SetValue(ref minimumVideoMilliseconds, value); }
         public int ReadyStabilityMilliseconds { get => readyStabilityMilliseconds; set => SetValue(ref readyStabilityMilliseconds, value); }

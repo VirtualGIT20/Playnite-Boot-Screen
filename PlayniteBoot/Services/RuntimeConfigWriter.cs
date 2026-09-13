@@ -9,7 +9,7 @@ namespace PlayniteBoot.Services
 {
     public class RuntimeConfigWriter
     {
-        public const int CurrentConfigVersion = 2;
+        public const int CurrentConfigVersion = 3;
 
         private readonly RuntimePaths paths;
         private readonly string playniteConfigurationPath;
@@ -87,8 +87,7 @@ namespace PlayniteBoot.Services
             Append(b, "monitor", s.Monitor, true);
             Append(b, "monitorFallback", s.MonitorFallback, true);
             Append(b, "videoStretch", s.VideoStretch, true);
-            Append(b, "loopVideo", s.LoopVideo, true);
-            Append(b, "waitForVideoEnd", s.WaitForVideoEnd, true);
+            Append(b, "videoEndBehavior", VideoEndBehaviors.Normalize(s.VideoEndBehavior), true);
             Append(b, "mute", s.Mute, true);
             Append(b, "volume", volume, true);
             b.AppendLine();
