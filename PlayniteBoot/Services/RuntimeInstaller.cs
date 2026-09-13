@@ -70,12 +70,28 @@ namespace PlayniteBoot.Services
                 }
             }
 
-            // A customized default video must survive extension updates.
-            var sourceVideo = Path.Combine(paths.RuntimeTemplateDirectory, "media", "boot-4k60.mp4");
-            if (File.Exists(sourceVideo) && !File.Exists(paths.DefaultVideoPath))
+            // Bundled videos seed the managed media library, but runtime media is
+            // user-owned after installation. Never overwrite an existing file,
+            // including during a forced runtime repair.
+            var templateMediaDirectory = Path.Combine(paths.RuntimeTemplateDirectory, "media");
+            if (Directory.Exists(templateMediaDirectory))
             {
-                File.Copy(sourceVideo, paths.DefaultVideoPath, false);
-                copied++;
+                foreach (var sourceVideo in Directory.EnumerateFiles(templateMediaDirectory, "*", SearchOption.TopDirectoryOnly))
+                {
+                    if (!VideoLibraryService.IsAcceptedVideo(sourceVideo))
+                    {
+                        continue;
+                    }
+
+                    var targetVideo = Path.Combine(paths.MediaDirectory, Path.GetFileName(sourceVideo));
+                    if (File.Exists(targetVideo))
+                    {
+                        continue;
+                    }
+
+                    File.Copy(sourceVideo, targetVideo, false);
+                    copied++;
+                }
             }
 
             return new RuntimeInstallResult
