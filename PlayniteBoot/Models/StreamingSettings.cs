@@ -8,7 +8,7 @@ namespace PlayniteBoot.Models
         private string monitor = "clientResolution";
         private int preloadReadyTimeoutMilliseconds = 6000;
         private int continueWaitTimeoutMilliseconds = 10000;
-        private int preloadAbandonTimeoutMilliseconds = 30000;
+        private int preloadAbandonTimeoutMilliseconds = 10000;
         private string fallbackMode = "standalone";
 
         public bool Enabled { get => enabled; set => SetValue(ref enabled, value); }

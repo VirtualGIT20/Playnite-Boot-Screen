@@ -137,7 +137,7 @@ else {
     $monitor = [string](Get-PropertyValue $streaming 'monitor' 'clientResolution')
     $preloadTimeout = [int](Get-PropertyValue $streaming 'preloadReadyTimeoutMilliseconds' 6000)
     $continueTimeout = [int](Get-PropertyValue $streaming 'continueWaitTimeoutMilliseconds' 10000)
-    $abandonTimeout = [int](Get-PropertyValue $streaming 'preloadAbandonTimeoutMilliseconds' 30000)
+    $abandonTimeout = [int](Get-PropertyValue $streaming 'preloadAbandonTimeoutMilliseconds' 10000)
     $fallbackMode = [string](Get-PropertyValue $streaming 'fallbackMode' 'standalone')
 
     Write-Host "Enabled:         $enabled"

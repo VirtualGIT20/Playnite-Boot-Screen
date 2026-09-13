@@ -34,7 +34,7 @@ namespace PlayniteBoot.Models
 
     public class PlayniteBootSettingsData : ObservableObject
     {
-        public const int CurrentSettingsVersion = 4;
+        public const int CurrentSettingsVersion = 5;
 
         private int settingsVersion;
         private string playniteExecutable = "auto";

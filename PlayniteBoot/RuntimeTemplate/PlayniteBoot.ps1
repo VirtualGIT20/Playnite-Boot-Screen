@@ -433,6 +433,10 @@ function Write-Log {
     }
 }
 
+if ($Mode -eq 'Continue') {
+    Write-Log "Continue mode entered. PID: $PID."
+}
+
 $settings = $null
 $startupIntroHandledMarkerName = 'Local\PlayniteBootScreen.StartupIntroHandled.v1'
 
@@ -469,7 +473,7 @@ $streamingSettings = [PSCustomObject]@{
     Monitor = [string](Get-ConfigValue -Config $streamingConfig -Name 'monitor' -DefaultValue 'clientResolution')
     PreloadReadyTimeoutMilliseconds = $(Get-MinimumInteger -Value ([int](Get-ConfigValue -Config $streamingConfig -Name 'preloadReadyTimeoutMilliseconds' -DefaultValue 6000)) -Minimum 1000 -Fallback 1000)
     ContinueWaitTimeoutMilliseconds = $(Get-MinimumInteger -Value ([int](Get-ConfigValue -Config $streamingConfig -Name 'continueWaitTimeoutMilliseconds' -DefaultValue 10000)) -Minimum 1000 -Fallback 1000)
-    PreloadAbandonTimeoutMilliseconds = $(Get-MinimumInteger -Value ([int](Get-ConfigValue -Config $streamingConfig -Name 'preloadAbandonTimeoutMilliseconds' -DefaultValue 30000)) -Minimum 5000 -Fallback 5000)
+    PreloadAbandonTimeoutMilliseconds = $(Get-MinimumInteger -Value ([int](Get-ConfigValue -Config $streamingConfig -Name 'preloadAbandonTimeoutMilliseconds' -DefaultValue 10000)) -Minimum 5000 -Fallback 5000)
     FallbackMode = [string](Get-ConfigValue -Config $streamingConfig -Name 'fallbackMode' -DefaultValue 'standalone')
 }
 

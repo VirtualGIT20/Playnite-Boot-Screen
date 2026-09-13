@@ -437,6 +437,15 @@ namespace PlayniteBoot
                 settings.VideoEndBehavior = VideoEndBehaviors.Normalize(settings.VideoEndBehavior);
             }
 
+            if (settings.SettingsVersion < 5 &&
+                settings.Streaming.PreloadAbandonTimeoutMilliseconds == 30000)
+            {
+                // 0.8.0 shortens the stale preload Host wait so a missing
+                // Detached/Continue launch cannot leave a black overlay for
+                // the previous 30-second default. Preserve custom values.
+                settings.Streaming.PreloadAbandonTimeoutMilliseconds = 10000;
+            }
+
             settings.SettingsVersion = PlayniteBootSettingsData.CurrentSettingsVersion;
 
             if (string.IsNullOrWhiteSpace(settings.VideoPath))
