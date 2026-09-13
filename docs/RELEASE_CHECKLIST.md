@@ -1,4 +1,4 @@
-# Release checklist — 0.7.0
+# Release checklist — 0.7.1
 
 ## Code and behavior
 
@@ -26,19 +26,20 @@
 - [ ] Desktop and Start shortcuts can be created, renamed, and removed.
 - [ ] Invalid or modified shortcut state cannot escape the Desktop or Start menu directories.
 - [ ] Runtime log rotates to `PlayniteBoot.log.1` after 2 MiB.
-- [ ] With `VERSION.txt` unchanged at `1.0.7`, modifying a managed installed runtime file is repaired automatically on the next Playnite start.
+- [ ] With `VERSION.txt` unchanged at `1.0.8`, modifying a managed installed runtime file is repaired automatically on the next Playnite start.
 
 ## Display matrix
 
 - [ ] Single 1080p display at 100% scaling.
-- [ ] Single 4K display at 150% or 200% scaling.
+- [ ] 4K display or VDD at 250% scaling: the bootstrap cover fills the physical display before the video.
+- [ ] The same 4K display or VDD at 100% scaling: the bootstrap cover remains full-screen.
 - [ ] Mixed 1080p/4K displays with different scaling values.
 - [ ] Secondary display with negative desktop coordinates.
 - [ ] Sunshine/Apollo virtual display at 4K60.
 
 ## Packaging
 
-- [ ] `scripts/verify-release.ps1 -Version 0.7.0` succeeds.
+- [ ] `scripts/verify-release.ps1 -Version 0.7.1` succeeds.
 - [ ] `scripts/pack.ps1 -Configuration Release` creates exactly one expected `.pext`.
 - [ ] Build output and `.pext` both contain `RuntimeTemplate\SwitchBootstrap.ps1`.
 - [ ] Build and package contain no `.pdb`, source, temporary, or stale files.
@@ -52,12 +53,12 @@
 - [ ] Repository description, topics, and license are set.
 - [ ] Private vulnerability reporting is enabled.
 - [ ] CI workflow succeeds.
-- [ ] Tag `v0.7.0` creates a release with `.pext` and checksum.
-- [ ] Release notes describe the Desktop → Fullscreen transition, fail-open behavior, and content-aware runtime synchronization.
+- [ ] Tag `v0.7.1` creates a release with `.pext` and checksum.
+- [ ] Release notes describe the high-DPI bootstrap sizing fix and confirm that the WPF/streaming paths are unchanged.
 
 ## Playnite add-on database
 
 - [ ] GitHub release asset URL is live.
 - [ ] `distribution/installer.yaml` verifies with Toolbox.
 - [ ] `distribution/addon.yaml` verifies with Toolbox.
-- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.7.0`; no database pull request is needed unless central metadata changes.
+- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.7.1`; no database pull request is needed unless central metadata changes.

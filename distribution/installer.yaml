@@ -1,5 +1,12 @@
 AddonId: PlayniteBoot_71b5c099-3c25-4fe7-b26f-1262c7f0e138
 Packages:
+  - Version: 0.7.1
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-09-13
+    PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.7.1/Playnite-Boot-Screen-v0.7.1.pext
+    Changelog:
+      - Fix the Desktop-to-Fullscreen handoff cover sizing on high-DPI and virtual displays.
+      - Resolve physical monitor bounds for the temporary bootstrap cover while leaving the normal WPF boot overlay unchanged.
   - Version: 0.7.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-11
