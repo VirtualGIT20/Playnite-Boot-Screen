@@ -1,6 +1,6 @@
 # Playnite Boot Screen
 
-[Italiano](README_IT.md) · [Changelog](CHANGELOG.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+[Italiano](README_IT.md) · [Changelog](CHANGELOG.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Integration contract](docs/INTEGRATION.md)
 
 ![Playnite Boot Screen preview](docs/assets/boot-screen.png)
 
@@ -15,11 +15,12 @@ https://github.com/user-attachments/assets/6d77a081-9165-4f0f-a6bb-785642ced0e7
 - Managed video list for supported files in the persistent runtime media folder, while external video paths remain supported.
 - Follow Playnite's Fullscreen display setting or choose a monitor manually, with safe multi-monitor readiness detection.
 - Configurable scaling, fades, mute, and volume from 0 to 100.
-- Reveal Playnite as soon as it is ready, or wait for the video to end naturally.
+- Choose whether to reveal Playnite as soon as it is ready, wait for the video to finish, or loop until Playnite is ready.
 - Cover Playnite's built-in Desktop-to-Fullscreen transition with the configured boot video; enabled by default and optional in settings.
 - Managed runtime stored outside the replaceable extension installation directory.
 - Configurable Desktop and Start menu shortcut name.
 - Streaming Preload and Continue commands shown directly in the settings page.
+- Public runtime marker for theme/helper plugins that need to suppress duplicate startup intros.
 - English and Italian localization.
 - Local diagnostic logs capped at 2 MiB with one backup.
 - No telemetry, accounts, or network services.
@@ -67,9 +68,21 @@ Enable streaming preload in the **Streaming** tab, then copy:
 1. **Prep command — Preload**;
 2. **Detached command — Continue**.
 
-No Undo command is required. Preload starts a hidden host, selects the streaming display, opens the video, and exits only after the video is visible and advancing. Continue launches or adopts Playnite Fullscreen directly, then signals the host to keep tracking readiness behind the same overlay.
+No Undo command is required. Preload starts a hidden host, selects the streaming display, primes the video decoder, then pauses and rewinds the video while the overlay stays black. Continue launches or adopts Playnite Fullscreen directly and signals the host to restart playback from the beginning while it keeps tracking readiness behind the same overlay.
 
 See [Streaming setup](docs/STREAMING.md) for details and recovery guidance.
+
+## Theme and helper integration
+
+While Playnite Boot Screen is actively covering startup, it publishes the signaled Windows event `Local\PlayniteBootScreen.StartupIntroHandled.v1`. Theme/helper plugins can use this marker to skip their own startup intro for that launch without reading Playnite Boot Screen settings. The marker is independent from the selected video and playback behavior.
+
+See the [integration contract](docs/INTEGRATION.md) for the exact semantics and a C# consumer example.
+
+### Aniki ReMake / Aniki Helper
+
+Aniki ReMake / Aniki Helper supports the PBS startup marker, so its own startup intro can be skipped while Playnite Boot Screen is already handling the launch. The extended Aniki ReMake intro is also included as an optional bundled video and can be selected from the normal PBS media library.
+
+This integration does not lock PBS to Aniki: the marker is independent from the selected video, and custom videos or other themes continue to work normally.
 
 ## Runtime data
 
@@ -80,6 +93,8 @@ Persistent files are stored under Playnite's extension data directory:
 ├── Runtime\
 │   ├── config.json
 │   ├── media\
+│   ├── cache\
+│   │   └── video-compat\
 │   └── logs\
 └── shortcut-state.json
 ```
@@ -87,7 +102,7 @@ Persistent files are stored under Playnite's extension data directory:
 The extension installation directory can be safely replaced during updates without deleting custom media, configuration, or logs.
 Managed runtime files are synchronized by content when Playnite starts, while custom media, configuration, and logs remain untouched.
 
-Place `.mp4`, `.mkv`, `.webm`, `.avi`, or `.mov` files directly in `Runtime\media`, then use **Refresh list** in the settings page. Files outside this folder can still be selected with **Browse external…**.
+Place `.mp4`, `.mkv`, `.webm`, `.avi`, or `.mov` files directly in `Runtime\media`, then use **Refresh list** in the settings page. Files outside this folder can still be selected with **Browse external…**. WebM files are transparently exposed to the Windows media pipeline through a cached `.mkv` compatibility alias; the original file is never renamed or modified. The compatibility cache keeps only the alias for the currently selected WebM source and is cleared when a non-WebM video is selected.
 
 ## Build
 

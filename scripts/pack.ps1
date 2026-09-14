@@ -68,7 +68,8 @@ $requiredFiles = @(
     'RuntimeTemplate\Install-Shortcut.ps1',
     'RuntimeTemplate\Test-Configuration.ps1',
     'RuntimeTemplate\VERSION.txt',
-    'RuntimeTemplate\media\boot-4k60.mp4'
+    'RuntimeTemplate\media\boot-4k60.mp4',
+    'RuntimeTemplate\media\Aniki_Remake_Intro.mp4'
 )
 
 $missingFiles = @($requiredFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $output $_) -PathType Leaf) })

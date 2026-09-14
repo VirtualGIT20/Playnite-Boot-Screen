@@ -1,4 +1,4 @@
-# Release checklist — 0.7.1
+# Release checklist — 0.8.0
 
 ## Code and behavior
 
@@ -11,7 +11,12 @@
 - [ ] Fullscreen → Desktop → Fullscreen can be repeated and the boot transition still works.
 - [ ] Disabling the Desktop → Fullscreen option leaves Playnite's native switch untouched.
 - [ ] Normal Playnite Desktop exit does not trigger the switch overlay.
-- [ ] Wait-for-video-end mode succeeds.
+- [ ] Ready, Wait, and Loop video-end behaviors each complete with the expected readiness/end semantics.
+- [ ] A video that ends before Playnite is ready holds its final frame instead of revealing Playnite early.
+- [ ] WebM selection resolves through the compatibility alias and still preserves the original source file.
+- [ ] Streaming Preload primes and rewinds the decoder, and Continue restarts playback from the beginning.
+- [ ] The startup-intro marker is signaled while PBS owns the overlay and absent/reset after release.
+- [ ] With Aniki Helper intro enabled, PBS startup suppresses the duplicate Aniki intro; a normal Playnite launch remains outside the PBS marker lifecycle.
 - [ ] Alt+F4 closes the overlay and stops the Playnite Fullscreen process started by the boot sequence.
 - [ ] Alt+F4 during Preload prevents a later Continue command from using the standalone fallback.
 - [ ] Alt+Tab yields the overlay, restores the cursor, and does not cancel Playnite startup.
@@ -26,7 +31,7 @@
 - [ ] Desktop and Start shortcuts can be created, renamed, and removed.
 - [ ] Invalid or modified shortcut state cannot escape the Desktop or Start menu directories.
 - [ ] Runtime log rotates to `PlayniteBoot.log.1` after 2 MiB.
-- [ ] With `VERSION.txt` unchanged at `1.0.8`, modifying a managed installed runtime file is repaired automatically on the next Playnite start.
+- [ ] With `VERSION.txt` unchanged at `1.0.9`, modifying a managed installed runtime file is repaired automatically on the next Playnite start.
 
 ## Display matrix
 
@@ -39,9 +44,10 @@
 
 ## Packaging
 
-- [ ] `scripts/verify-release.ps1 -Version 0.7.1` succeeds.
+- [ ] `scripts/verify-release.ps1 -Version 0.8.0` succeeds.
 - [ ] `scripts/pack.ps1 -Configuration Release` creates exactly one expected `.pext`.
 - [ ] Build output and `.pext` both contain `RuntimeTemplate\SwitchBootstrap.ps1`.
+- [ ] Build output and `.pext` both contain `RuntimeTemplate\media\Aniki_Remake_Intro.mp4`.
 - [ ] Build and package contain no `.pdb`, source, temporary, or stale files.
 - [ ] SHA-256 file matches the package.
 - [ ] The `.pext` installs on a clean Playnite profile.
@@ -53,12 +59,12 @@
 - [ ] Repository description, topics, and license are set.
 - [ ] Private vulnerability reporting is enabled.
 - [ ] CI workflow succeeds.
-- [ ] Tag `v0.7.1` creates a release with `.pext` and checksum.
-- [ ] Release notes describe the high-DPI bootstrap sizing fix and confirm that the WPF/streaming paths are unchanged.
+- [ ] Tag `v0.8.0` creates a release with `.pext` and checksum.
+- [ ] Release notes highlight the playback model, WebM compatibility, streaming preload improvements, and Aniki ReMake integration.
 
 ## Playnite add-on database
 
 - [ ] GitHub release asset URL is live.
 - [ ] `distribution/installer.yaml` verifies with Toolbox.
 - [ ] `distribution/addon.yaml` verifies with Toolbox.
-- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.7.1`; no database pull request is needed unless central metadata changes.
+- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.8.0`; no database pull request is needed unless central metadata changes.

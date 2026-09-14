@@ -3,6 +3,8 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Windows;
 
@@ -76,7 +78,63 @@ namespace PlayniteBoot.Services
             // rendered; once armed, Playnite is free to close Desktop and launch
             // Fullscreen behind the cover.
             switchHandled = true;
+
+            // A streaming preload host already owns the target display with its
+            // own boot overlay. Starting SwitchBootstrap as well would briefly
+            // place a second black TopMost window above the running video before
+            // the Switch runtime notices the launcher mutex and exits. Skip the
+            // redundant cover and let the active streaming Host track Fullscreen.
+            if (IsStreamingHostActive())
+            {
+                logger.Info(PlayniteBootPlugin.ProductName + " skipped the Desktop-to-Fullscreen switch cover because a streaming preload host is already active.");
+                return;
+            }
+
             TryArmSwitchCover(Process.GetCurrentProcess().Id, DateTime.UtcNow);
+        }
+
+        private bool IsStreamingHostActive()
+        {
+            Mutex existingMutex = null;
+            try
+            {
+                existingMutex = Mutex.OpenExisting(GetStreamingHostMutexName(paths.ConfigPath));
+                return true;
+            }
+            catch (WaitHandleCannotBeOpenedException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // The named object exists even if this process cannot open it.
+                // Treat that as an active Host so the switch integration fails
+                // open instead of flashing a redundant black cover.
+                return true;
+            }
+            catch (Exception exception)
+            {
+                logger.Warn(PlayniteBootPlugin.ProductName + " could not check the streaming preload host state: " + exception.Message);
+                return false;
+            }
+            finally
+            {
+                if (existingMutex != null)
+                {
+                    existingMutex.Dispose();
+                }
+            }
+        }
+
+        private static string GetStreamingHostMutexName(string configPath)
+        {
+            using (var sha = SHA256.Create())
+            {
+                var identityBytes = Encoding.UTF8.GetBytes((configPath ?? string.Empty).ToLowerInvariant());
+                var hashBytes = sha.ComputeHash(identityBytes);
+                var hash = BitConverter.ToString(hashBytes).Replace("-", string.Empty).Substring(0, 16);
+                return "Local\\PlayniteBoot_" + hash + "_Host";
+            }
         }
 
         private bool IsEnabled()

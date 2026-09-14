@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Windows;
+using System.Web.Script.Serialization;
 using Forms = System.Windows.Forms;
 
 namespace PlayniteBoot
@@ -23,7 +24,6 @@ namespace PlayniteBoot
         private PlayniteBootSettingsData editingClone;
         private PlayniteBootSettingsData settings;
         private string runtimeStatus;
-        private bool synchronizingVideoOptions;
 
         public PlayniteBootSettingsData Settings
         {
@@ -43,12 +43,14 @@ namespace PlayniteBoot
                 OnPropertyChanged(nameof(DirectCommand));
                 OnPropertyChanged(nameof(PreloadCommand));
                 OnPropertyChanged(nameof(ContinueCommand));
-                OnPropertyChanged(nameof(IsLoopVideoEnabled));
-                OnPropertyChanged(nameof(IsMinimumVideoDurationEnabled));
+                OnPropertyChanged(nameof(IsVideoEndReady));
+                OnPropertyChanged(nameof(IsVideoEndWait));
+                OnPropertyChanged(nameof(IsVideoEndLoop));
                 OnPropertyChanged(nameof(IsVolumeEnabled));
                 OnPropertyChanged(nameof(VolumePercent));
                 OnPropertyChanged(nameof(SelectedVideoPath));
                 OnPropertyChanged(nameof(SelectedVideoPathDisplay));
+                NotifyInstallationStatusChanged();
 
                 if (videoLibrary != null)
                 {
@@ -86,8 +88,45 @@ namespace PlayniteBoot
             ? string.Empty
             : GetConfiguredVideoPath();
 
-        public bool IsLoopVideoEnabled => Settings == null || !Settings.WaitForVideoEnd;
-        public bool IsMinimumVideoDurationEnabled => Settings == null || !Settings.WaitForVideoEnd;
+        public string AcceptedVideoFormats => F("LOCPlayniteBootAcceptedFormats", VideoLibraryService.AcceptedFormatsDisplay);
+        public string AcceptedVideoFormatsToolTip => L("LOCPlayniteBootTipAcceptedFormats");
+
+        public bool IsVideoEndReady
+        {
+            get => Settings == null || string.Equals(Settings.VideoEndBehavior, VideoEndBehaviors.Ready, StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                {
+                    SetVideoEndBehavior(VideoEndBehaviors.Ready);
+                }
+            }
+        }
+
+        public bool IsVideoEndWait
+        {
+            get => Settings != null && string.Equals(Settings.VideoEndBehavior, VideoEndBehaviors.Wait, StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                {
+                    SetVideoEndBehavior(VideoEndBehaviors.Wait);
+                }
+            }
+        }
+
+        public bool IsVideoEndLoop
+        {
+            get => Settings != null && string.Equals(Settings.VideoEndBehavior, VideoEndBehaviors.Loop, StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                {
+                    SetVideoEndBehavior(VideoEndBehaviors.Loop);
+                }
+            }
+        }
+
         public bool IsVolumeEnabled => Settings == null || !Settings.Mute;
 
         public int VolumePercent
@@ -109,6 +148,21 @@ namespace PlayniteBoot
         }
 
         public string RuntimeDirectory => plugin.Paths.RuntimeDirectory;
+        public string RuntimeVersionValue => ReadRuntimeVersion();
+        public string RuntimeVersionDisplay => F("LOCPlayniteBootRuntimeVersion", RuntimeVersionValue);
+        public string RuntimeConfigurationStatus => IsRuntimeConfigurationValid()
+            ? L("LOCPlayniteBootStatusConfigurationValid")
+            : L("LOCPlayniteBootStatusConfigurationNeedsRepair");
+        public string DesktopShortcutStatus => GetShortcutStatus(ShortcutLocation.Desktop);
+        public string StartMenuShortcutStatus => GetShortcutStatus(ShortcutLocation.StartMenu);
+        public string ExtensionVersionDisplay
+        {
+            get
+            {
+                var version = Assembly.GetExecutingAssembly().GetName().Version;
+                return version == null ? "unknown" : version.ToString(3);
+            }
+        }
         public string DirectCommand => plugin.Commands.DirectCommand;
         public string PreloadCommand => plugin.Commands.PreloadCommand;
         public string ContinueCommand => plugin.Commands.ContinueCommand;
@@ -123,7 +177,7 @@ namespace PlayniteBoot
         public RelayCommand OpenVideoFolderCommand { get; }
         public RelayCommand RestoreDefaultVideoCommand { get; }
         public RelayCommand ResetSettingsCommand { get; }
-        public RelayCommand InstallRuntimeCommand { get; }
+        public RelayCommand RepairRuntimeCommand { get; }
         public RelayCommand CreateDesktopShortcutCommand { get; }
         public RelayCommand CreateStartMenuShortcutCommand { get; }
         public RelayCommand RemoveDesktopShortcutCommand { get; }
@@ -161,7 +215,7 @@ namespace PlayniteBoot
             OpenVideoFolderCommand = new RelayCommand(() => ExecuteAction(OpenVideoFolder));
             RestoreDefaultVideoCommand = new RelayCommand(RestoreDefaultVideo);
             ResetSettingsCommand = new RelayCommand(ResetSettings);
-            InstallRuntimeCommand = new RelayCommand(() => ExecuteAction(InstallRuntime));
+            RepairRuntimeCommand = new RelayCommand(() => ExecuteAction(RepairRuntime));
             CreateDesktopShortcutCommand = new RelayCommand(() => ExecuteAction(() => CreateShortcut(ShortcutLocation.Desktop)));
             CreateStartMenuShortcutCommand = new RelayCommand(() => ExecuteAction(() => CreateShortcut(ShortcutLocation.StartMenu)));
             RemoveDesktopShortcutCommand = new RelayCommand(() => ExecuteAction(() => RemoveShortcut(ShortcutLocation.Desktop)));
@@ -220,6 +274,11 @@ namespace PlayniteBoot
                 {
                     errors.Add(F("LOCPlayniteBootValidationVideoMissing", videoPath));
                 }
+
+                if (!VideoLibraryService.IsAcceptedVideo(videoPath))
+                {
+                    errors.Add(F("LOCPlayniteBootValidationVideoFormat", VideoLibraryService.AcceptedFormatsDisplay));
+                }
             }
             catch (Exception)
             {
@@ -251,10 +310,6 @@ namespace PlayniteBoot
                 ValidateMinimum(errors, Settings.Streaming.PreloadAbandonTimeoutMilliseconds, 5000, L("LOCPlayniteBootLabelPreloadAbandonTimeout"));
             }
 
-            if (Settings.WaitForVideoEnd && Settings.LoopVideo)
-            {
-                errors.Add(L("LOCPlayniteBootValidationLoopWaitConflict"));
-            }
 
             ValidateShortcutName(errors, Settings.ShortcutName);
             return errors.Count == 0;
@@ -291,26 +346,35 @@ namespace PlayniteBoot
                 return;
             }
 
-            if (synchronizingVideoOptions || eventArgs.PropertyName != nameof(PlayniteBootSettingsData.WaitForVideoEnd))
+            if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.VideoEndBehavior))
+            {
+                OnPropertyChanged(nameof(IsVideoEndReady));
+                OnPropertyChanged(nameof(IsVideoEndWait));
+                OnPropertyChanged(nameof(IsVideoEndLoop));
+                return;
+            }
+
+            if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.ShortcutName))
+            {
+                OnPropertyChanged(nameof(DesktopShortcutStatus));
+                OnPropertyChanged(nameof(StartMenuShortcutStatus));
+            }
+        }
+
+        private void SetVideoEndBehavior(string behavior)
+        {
+            if (Settings == null)
             {
                 return;
             }
 
-            if (Settings.WaitForVideoEnd && Settings.LoopVideo)
+            var normalized = VideoEndBehaviors.Normalize(behavior);
+            if (string.Equals(Settings.VideoEndBehavior, normalized, StringComparison.OrdinalIgnoreCase))
             {
-                try
-                {
-                    synchronizingVideoOptions = true;
-                    Settings.LoopVideo = false;
-                }
-                finally
-                {
-                    synchronizingVideoOptions = false;
-                }
+                return;
             }
 
-            OnPropertyChanged(nameof(IsLoopVideoEnabled));
-            OnPropertyChanged(nameof(IsMinimumVideoDurationEnabled));
+            Settings.VideoEndBehavior = normalized;
         }
 
         private void EnsureDefaultsAndMigrate()
@@ -346,6 +410,40 @@ namespace PlayniteBoot
                 // The Desktop -> Fullscreen boot transition is enabled by default
                 // for both new and existing installations.
                 settings.EnableDesktopFullscreenSwitch = true;
+            }
+
+            if (settings.SettingsVersion < 4)
+            {
+                // 0.7.1 and earlier stored two booleans. Prefer the stricter wait
+                // behavior if an invalid legacy combination has both enabled.
+                if (settings.WaitForVideoEnd)
+                {
+                    settings.VideoEndBehavior = VideoEndBehaviors.Wait;
+                }
+                else if (settings.LoopVideo)
+                {
+                    settings.VideoEndBehavior = VideoEndBehaviors.Loop;
+                }
+                else
+                {
+                    settings.VideoEndBehavior = VideoEndBehaviors.Ready;
+                }
+
+                settings.WaitForVideoEnd = false;
+                settings.LoopVideo = false;
+            }
+            else
+            {
+                settings.VideoEndBehavior = VideoEndBehaviors.Normalize(settings.VideoEndBehavior);
+            }
+
+            if (settings.SettingsVersion < 5 &&
+                settings.Streaming.PreloadAbandonTimeoutMilliseconds == 30000)
+            {
+                // 0.8.0 shortens the stale preload Host wait so a missing
+                // Detached/Continue launch cannot leave a black overlay for
+                // the previous 30-second default. Preserve custom values.
+                settings.Streaming.PreloadAbandonTimeoutMilliseconds = 10000;
             }
 
             settings.SettingsVersion = PlayniteBootSettingsData.CurrentSettingsVersion;
@@ -480,7 +578,7 @@ namespace PlayniteBoot
                 initialDirectory = string.Empty;
             }
 
-            var filter = L("LOCPlayniteBootVideoFileFilter");
+            var filter = VideoLibraryService.BuildFileDialogFilter(L("LOCPlayniteBootVideoFileFilterLabel"));
             var selected = string.IsNullOrWhiteSpace(initialDirectory)
                 ? plugin.PlayniteApi.Dialogs.SelectFile(filter)
                 : plugin.PlayniteApi.Dialogs.SelectFile(filter, initialDirectory);
@@ -669,10 +767,10 @@ namespace PlayniteBoot
             RuntimeStatus = L("LOCPlayniteBootStatusDefaultsRestored");
         }
 
-        private void InstallRuntime()
+        private void RepairRuntime()
         {
             var result = plugin.PrepareRuntime(Settings, true);
-            RuntimeStatus = F("LOCPlayniteBootStatusRuntimeInstalled", result.Version, result.CopiedFiles);
+            RuntimeStatus = F("LOCPlayniteBootStatusRuntimeRepaired", result.Version, result.CopiedFiles);
             plugin.PlayniteApi.Dialogs.ShowMessage(RuntimeStatus, PlayniteBootPlugin.ProductName);
         }
 
@@ -757,7 +855,7 @@ namespace PlayniteBoot
             b.AppendLine("Playnite: " + plugin.PlayniteApi.ApplicationInfo.ApplicationVersion);
             b.AppendLine("Language: " + plugin.PlayniteApi.ApplicationSettings.Language);
             b.AppendLine("Config version: " + RuntimeConfigWriter.CurrentConfigVersion);
-            b.AppendLine("Mode: " + (Settings.WaitForVideoEnd ? "waitForVideoEnd" : "readyAndMinimumDuration"));
+            b.AppendLine("Video end behavior: " + VideoEndBehaviors.Normalize(Settings.VideoEndBehavior));
             b.AppendLine("Streaming preload: " + (Settings.Streaming != null && Settings.Streaming.Enabled ? "enabled" : "disabled"));
             b.AppendLine("Desktop -> Fullscreen boot: " + (Settings.EnableDesktopFullscreenSwitch ? "enabled" : "disabled"));
             b.AppendLine("Runtime installed: " + YesNo(File.Exists(plugin.Paths.ScriptPath) && File.Exists(plugin.Paths.ConfigPath)));
@@ -795,6 +893,8 @@ namespace PlayniteBoot
 
         private void RefreshRuntimeStatus(bool overwriteActionStatus = true)
         {
+            NotifyInstallationStatusChanged();
+
             if (!overwriteActionStatus && !string.IsNullOrWhiteSpace(RuntimeStatus))
             {
                 return;
@@ -802,7 +902,7 @@ namespace PlayniteBoot
 
             if (File.Exists(plugin.Paths.ScriptPath) && File.Exists(plugin.Paths.ConfigPath))
             {
-                RuntimeStatus = F("LOCPlayniteBootStatusRuntimeReady", ReadRuntimeVersion());
+                RuntimeStatus = L("LOCPlayniteBootStatusRuntimeReady");
             }
             else if (Directory.Exists(plugin.Paths.RuntimeDirectory))
             {
@@ -811,6 +911,62 @@ namespace PlayniteBoot
             else
             {
                 RuntimeStatus = L("LOCPlayniteBootStatusRuntimeMissing");
+            }
+        }
+
+        private void NotifyInstallationStatusChanged()
+        {
+            OnPropertyChanged(nameof(RuntimeVersionValue));
+            OnPropertyChanged(nameof(RuntimeVersionDisplay));
+            OnPropertyChanged(nameof(RuntimeConfigurationStatus));
+            OnPropertyChanged(nameof(DesktopShortcutStatus));
+            OnPropertyChanged(nameof(StartMenuShortcutStatus));
+            OnPropertyChanged(nameof(ExtensionVersionDisplay));
+        }
+
+        private bool IsRuntimeConfigurationValid()
+        {
+            try
+            {
+                if (!File.Exists(plugin.Paths.ConfigPath))
+                {
+                    return false;
+                }
+
+                var json = File.ReadAllText(plugin.Paths.ConfigPath);
+                var serializer = new JavaScriptSerializer();
+                var config = serializer.DeserializeObject(json) as IDictionary<string, object>;
+                if (config == null || !config.TryGetValue("configVersion", out var versionValue))
+                {
+                    return false;
+                }
+
+                var configVersion = Convert.ToInt32(versionValue, CultureInfo.InvariantCulture);
+                if (configVersion != RuntimeConfigWriter.CurrentConfigVersion ||
+                    !config.TryGetValue("videoEndBehavior", out var behaviorValue))
+                {
+                    return false;
+                }
+
+                return VideoEndBehaviors.IsValid(Convert.ToString(behaviorValue, CultureInfo.InvariantCulture));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private string GetShortcutStatus(ShortcutLocation location)
+        {
+            try
+            {
+                return plugin.ShortcutExists(Settings, location)
+                    ? L("LOCPlayniteBootStatusInstalled")
+                    : L("LOCPlayniteBootStatusNotInstalled");
+            }
+            catch
+            {
+                return L("LOCPlayniteBootStatusUnknown");
             }
         }
 

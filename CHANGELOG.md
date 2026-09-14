@@ -4,6 +4,36 @@ All notable changes are documented here. Versions follow the Playnite extension 
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-14
+
+### Added
+
+- Three explicit video-end behaviors: reveal Playnite as soon as it is ready, wait for the video to finish, or loop until Playnite is ready.
+- Transparent WebM compatibility playback through a local MKV alias/cache without transcoding or FFmpeg.
+- Public `Local\PlayniteBootScreen.StartupIntroHandled.v1` integration marker for themes and helper extensions that need to suppress duplicate startup intros.
+- Aniki ReMake extended startup intro as an optional bundled video.
+
+### Changed
+
+- Streaming Preload now primes the decoder while the overlay stays hidden, then pauses and rewinds playback so Continue starts the intro from the beginning.
+- Bundled videos are seeded into the persistent runtime media library without overwriting existing user files.
+- Video settings now use a single mutually exclusive playback selector and explicitly list MP4, MKV, WebM, AVI, and MOV.
+- The streaming Host now abandons a missing Continue command after 10 seconds instead of 30 seconds.
+- Added an early Continue-entry diagnostic log for failed streaming Detached launches.
+- Runtime updated to 1.0.9.
+
+### Fixed
+
+- A video ending before Playnite is ready now keeps its final frame instead of exposing the media element's end-of-stream surface.
+- Wait mode no longer seeks backward to the held final frame when Playnite is already ready and the video finishes naturally.
+- Streaming Preload no longer consumes the beginning of the startup video before the client session continues.
+- Desktop-to-Fullscreen bootstrap is suppressed while a streaming Host already owns the startup overlay, preventing an extra black cover during streaming startup.
+
+### Compatibility
+
+- Existing 0.7.x playback settings are migrated automatically to the new video-end behavior model.
+- Existing custom media, shortcuts, and streaming configuration remain compatible.
+
 ## [0.7.1] - 2026-09-13
 
 ### Fixed

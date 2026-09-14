@@ -50,8 +50,8 @@ Write-Host "Config version: $configVersion"
 if ($legacyStreaming) {
     Write-Warning 'Legacy vibepollo section detected. Save settings in the extension to migrate to streaming.'
 }
-if ($configVersion -gt 2) {
-    Write-Warning "Config version $configVersion is newer than the supported version 2."
+if ($configVersion -gt 3) {
+    Write-Warning "Config version $configVersion is newer than the supported version 3."
 }
 
 Write-Host ''
@@ -62,10 +62,22 @@ Write-Host "Monitor:        $($config.monitor)"
 Write-Host "Monitor fallback: $(Get-PropertyValue $config 'monitorFallback' 'primary')"
 Write-Host "Playnite config:  $(Get-PropertyValue $config 'playniteConfigurationPath' '')"
 Write-Host "Arguments:      $($config.launchArguments)"
-$loopVideo = [bool](Get-PropertyValue $config 'loopVideo' $false)
-$waitForVideoEnd = [bool](Get-PropertyValue $config 'waitForVideoEnd' $false)
-Write-Host "Loop video:     $loopVideo"
-Write-Host "Wait for end:   $waitForVideoEnd"
+$videoEndBehavior = [string](Get-PropertyValue $config 'videoEndBehavior' '')
+if ([string]::IsNullOrWhiteSpace($videoEndBehavior)) {
+    $legacyLoopVideo = [bool](Get-PropertyValue $config 'loopVideo' $false)
+    $legacyWaitForVideoEnd = [bool](Get-PropertyValue $config 'waitForVideoEnd' $false)
+    if ($legacyWaitForVideoEnd) {
+        $videoEndBehavior = 'wait'
+    }
+    elseif ($legacyLoopVideo) {
+        $videoEndBehavior = 'loop'
+    }
+    else {
+        $videoEndBehavior = 'ready'
+    }
+}
+$videoEndBehavior = $videoEndBehavior.Trim().ToLowerInvariant()
+Write-Host "End behavior:   $videoEndBehavior"
 Write-Host "Ready position: $($config.videoReadyPositionMilliseconds) ms"
 Write-Host "Ready samples:  $($config.videoReadyAdvanceSamples)"
 Write-Host "Ready timeout:  $($config.videoReadyTimeoutMilliseconds) ms"
@@ -74,13 +86,19 @@ Write-Host "Fade-out:       $($config.fadeOutMilliseconds) ms"
 Write-Host "Stability:      $($config.readyStabilityMilliseconds) ms"
 Write-Host 'Coverage:       at least 85% of the monitor actually occupied by Playnite (internal threshold)'
 
-if ($loopVideo -and $waitForVideoEnd) {
-    Write-Warning 'Invalid configuration: loopVideo and waitForVideoEnd cannot both be enabled.'
+if ($videoEndBehavior -notin @('ready', 'wait', 'loop')) {
+    Write-Warning "Unsupported videoEndBehavior: $videoEndBehavior. Use ready, wait or loop."
 }
-elseif ($waitForVideoEnd) {
+elseif ($videoEndBehavior -eq 'wait') {
     Write-Host 'OK: fade-out requires both Playnite readiness and the natural end of the video.' -ForegroundColor Green
-    Write-Host 'Note: minimumVideoMilliseconds is ignored while the video remains playable.'
 }
+elseif ($videoEndBehavior -eq 'loop') {
+    Write-Host 'OK: the video loops only while Playnite is not ready.' -ForegroundColor Green
+}
+else {
+    Write-Host 'OK: Playnite is revealed as soon as its Fullscreen window is ready.' -ForegroundColor Green
+}
+Write-Host 'Note: minimumVideoMilliseconds is used only as a fallback when the video is missing or not playable.'
 
 $video = Resolve-LocalPath ([string]$config.videoPath)
 if (Test-Path -LiteralPath $video -PathType Leaf) {
@@ -119,7 +137,7 @@ else {
     $monitor = [string](Get-PropertyValue $streaming 'monitor' 'clientResolution')
     $preloadTimeout = [int](Get-PropertyValue $streaming 'preloadReadyTimeoutMilliseconds' 6000)
     $continueTimeout = [int](Get-PropertyValue $streaming 'continueWaitTimeoutMilliseconds' 10000)
-    $abandonTimeout = [int](Get-PropertyValue $streaming 'preloadAbandonTimeoutMilliseconds' 30000)
+    $abandonTimeout = [int](Get-PropertyValue $streaming 'preloadAbandonTimeoutMilliseconds' 10000)
     $fallbackMode = [string](Get-PropertyValue $streaming 'fallbackMode' 'standalone')
 
     Write-Host "Enabled:         $enabled"

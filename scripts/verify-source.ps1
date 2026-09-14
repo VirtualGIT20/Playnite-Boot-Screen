@@ -110,23 +110,39 @@ if ($runtimeScript -notmatch "ValidateSet\('Standalone', 'Preload', 'Continue', 
 Write-Host 'Desktop-to-Fullscreen integration: OK'
 Write-Host 'Checking managed video library integration...'
 $videoLibraryPath = Join-Path $root 'PlayniteBoot\Services\VideoLibraryService.cs'
+$videoCompatibilityPath = Join-Path $root 'PlayniteBoot\Services\VideoCompatibilityService.cs'
 $configWriterPath = Join-Path $root 'PlayniteBoot\Services\RuntimeConfigWriter.cs'
 $settingsViewPath = Join-Path $root 'PlayniteBoot\PlayniteBootSettingsView.xaml'
-foreach ($requiredPath in @($videoLibraryPath, $configWriterPath, $settingsViewPath)) {
+foreach ($requiredPath in @($videoLibraryPath, $videoCompatibilityPath, $configWriterPath, $settingsViewPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
         throw "Required video library file not found: $requiredPath"
     }
 }
 
 $videoLibrarySource = Get-Content -LiteralPath $videoLibraryPath -Raw -Encoding UTF8
+$videoCompatibilitySource = Get-Content -LiteralPath $videoCompatibilityPath -Raw -Encoding UTF8
 $configWriterSource = Get-Content -LiteralPath $configWriterPath -Raw -Encoding UTF8
 $settingsViewSource = Get-Content -LiteralPath $settingsViewPath -Raw -Encoding UTF8
-if ($videoLibrarySource -notmatch 'SearchOption\.TopDirectoryOnly' -or
-    $videoLibrarySource -notmatch '\.mp4' -or
-    -not $configWriterSource.Contains('return @".\media\"') -or
-    $settingsViewSource -notmatch 'RefreshVideoLibraryCommand') {
+$acceptedVideoExtensions = @('\.mp4', '\.mkv', '\.webm', '\.avi', '\.mov')
+$missingVideoExtensions = @($acceptedVideoExtensions | Where-Object { $videoLibrarySource -notmatch $_ })
+$managedVideoChecks = @(
+    @{ Name = 'top-level managed media enumeration'; Pass = $videoLibrarySource -match 'SearchOption\.TopDirectoryOnly' },
+    @{ Name = 'accepted playback formats'; Pass = $missingVideoExtensions.Count -eq 0 },
+    @{ Name = 'WebM compatibility resolver'; Pass = $configWriterSource -match 'videoCompatibility\.Resolve' -and $videoCompatibilitySource -match '\.webm' },
+    @{ Name = 'runtime-relative playback path'; Pass = $configWriterSource.Contains('return @".\" + relativePath;') },
+    @{ Name = 'video library refresh command'; Pass = $settingsViewSource -match 'RefreshVideoLibraryCommand' },
+    @{ Name = 'bundled media seeding'; Pass = $runtimeInstallerSource -match 'Directory\.EnumerateFiles\(templateMediaDirectory' -and $runtimeInstallerSource -match 'VideoLibraryService\.IsAcceptedVideo' }
+)
+
+$failedManagedVideoChecks = @($managedVideoChecks | Where-Object { -not $_.Pass })
+foreach ($check in $managedVideoChecks) {
+    Write-Host ("Managed video {0}: {1}" -f $check.Name, $(if ($check.Pass) { 'OK' } else { 'FAILED' }))
+}
+
+if ($failedManagedVideoChecks.Count -gt 0) {
     throw 'Managed video library integration is incomplete.'
 }
+Write-Host 'Managed video library integration: OK'
 
 $videoPath = Join-Path $root 'PlayniteBoot\RuntimeTemplate\media\boot-4k60.mp4'
 if (-not (Test-Path -LiteralPath $videoPath -PathType Leaf)) {
