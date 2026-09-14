@@ -70,3 +70,7 @@ if (startupIntroEnabled && !IsStartupIntroHandledByPlayniteBootScreen())
 The `.v1` suffix is part of the public contract. Compatible changes keep the same name and semantics. Any future breaking change will use a new marker version instead of silently changing `v1`.
 
 The marker does not require another plugin to read Playnite Boot Screen's settings or runtime `config.json`, and Playnite Boot Screen does not need to know which theme/helper consumes it.
+
+## Known integration
+
+Aniki ReMake / Aniki Helper uses this contract to suppress its own startup intro while Playnite Boot Screen is already handling the launch. The integration is independent from the selected PBS video.

@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/fc1d7d9a-7a05-4b44-a43e-959a9b4a4fad
 - Elenco gestito dei video supportati nella cartella media persistente, mantenendo anche i percorsi video esterni.
 - Possibilità di seguire il display Fullscreen scelto da Playnite oppure selezionare manualmente il monitor, con rilevamento sicuro in configurazioni multi-monitor.
 - Adattamento, fade, mute e volume da 0 a 100 configurabili.
-- Possibilità di mostrare Playnite appena pronto oppure attendere la fine naturale del video.
+- Possibilità di mostrare Playnite appena pronto, attendere la fine del video oppure ripeterlo in loop finché Playnite non è pronto.
 - Copertura della transizione integrata Desktop → Fullscreen con il video configurato, attiva di default e disattivabile dalle impostazioni.
 - Runtime gestito fuori dalla directory sostituita durante gli aggiornamenti dell'estensione.
 - Nome personalizzabile per i collegamenti Desktop e menu Start.
@@ -71,6 +71,12 @@ Non è richiesto un comando Undo. Preload prepara il decoder, quindi mette in pa
 Mentre Playnite Boot Screen sta coprendo attivamente l'avvio, pubblica l'evento Windows segnalato `Local\PlayniteBootScreen.StartupIntroHandled.v1`. Temi e plugin helper possono usare questo marker per evitare di riprodurre una seconda intro nello stesso avvio senza leggere le impostazioni di Playnite Boot Screen. Il marker è indipendente dal video selezionato e dal comportamento di fine video.
 
 Consulta il [contratto di integrazione](docs/INTEGRATION.md) per semantica esatta ed esempio C# lato consumer.
+
+### Aniki ReMake / Aniki Helper
+
+Aniki ReMake / Aniki Helper supporta il marker di avvio di PBS, quindi può evitare la propria intro quando Playnite Boot Screen sta già gestendo l'avvio. L'intro estesa di Aniki ReMake è inoltre inclusa come video opzionale e può essere selezionata dalla normale libreria multimediale di PBS.
+
+L'integrazione non lega PBS ad Aniki: il marker è indipendente dal video selezionato e i video personalizzati o altri temi continuano a funzionare normalmente.
 
 ## Dati runtime
 

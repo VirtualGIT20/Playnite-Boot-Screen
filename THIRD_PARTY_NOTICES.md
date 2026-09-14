@@ -5,3 +5,5 @@ Playnite Boot Screen is an independent community extension and is not affiliated
 "Playnite", its logo, and related visual identity belong to their respective owners. Their appearance in the bundled sample boot media is descriptive and intended solely to identify the application being launched. The MIT license for this repository does not grant rights to third-party names, logos, or trademarks.
 
 The project references the Playnite SDK through NuGet. Playnite is distributed under its own license; see the upstream project for details.
+
+"Aniki ReMake" and "Aniki Helper" are third-party community projects and are not part of Playnite Boot Screen. The optional bundled `Aniki_Remake_Intro.mp4` is associated with that integration. Rights to third-party names, artwork, audio, and other media elements remain with their respective owners; the MIT license for this repository does not grant rights to those elements.

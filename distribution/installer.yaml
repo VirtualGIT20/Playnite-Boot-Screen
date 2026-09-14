@@ -1,5 +1,14 @@
 AddonId: PlayniteBoot_71b5c099-3c25-4fe7-b26f-1262c7f0e138
 Packages:
+  - Version: 0.8.0
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-09-14
+    PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.8.0/Playnite-Boot-Screen-v0.8.0.pext
+    Changelog:
+      - Add explicit Ready, Wait, and Loop video-end behaviors with automatic migration from 0.7.x.
+      - Add transparent WebM compatibility playback without transcoding or FFmpeg.
+      - Improve Sunshine/Apollo/VibePollo preload so Continue restarts the intro from the beginning.
+      - Add startup-intro integration for compatible helpers such as Aniki Helper, plus an optional bundled Aniki ReMake intro.
   - Version: 0.7.1
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-13

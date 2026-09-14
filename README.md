@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/6d77a081-9165-4f0f-a6bb-785642ced0e7
 - Managed video list for supported files in the persistent runtime media folder, while external video paths remain supported.
 - Follow Playnite's Fullscreen display setting or choose a monitor manually, with safe multi-monitor readiness detection.
 - Configurable scaling, fades, mute, and volume from 0 to 100.
-- Reveal Playnite as soon as it is ready, or wait for the video to end naturally.
+- Choose whether to reveal Playnite as soon as it is ready, wait for the video to finish, or loop until Playnite is ready.
 - Cover Playnite's built-in Desktop-to-Fullscreen transition with the configured boot video; enabled by default and optional in settings.
 - Managed runtime stored outside the replaceable extension installation directory.
 - Configurable Desktop and Start menu shortcut name.
@@ -77,6 +77,12 @@ See [Streaming setup](docs/STREAMING.md) for details and recovery guidance.
 While Playnite Boot Screen is actively covering startup, it publishes the signaled Windows event `Local\PlayniteBootScreen.StartupIntroHandled.v1`. Theme/helper plugins can use this marker to skip their own startup intro for that launch without reading Playnite Boot Screen settings. The marker is independent from the selected video and playback behavior.
 
 See the [integration contract](docs/INTEGRATION.md) for the exact semantics and a C# consumer example.
+
+### Aniki ReMake / Aniki Helper
+
+Aniki ReMake / Aniki Helper supports the PBS startup marker, so its own startup intro can be skipped while Playnite Boot Screen is already handling the launch. The extended Aniki ReMake intro is also included as an optional bundled video and can be selected from the normal PBS media library.
+
+This integration does not lock PBS to Aniki: the marker is independent from the selected video, and custom videos or other themes continue to work normally.
 
 ## Runtime data
 
