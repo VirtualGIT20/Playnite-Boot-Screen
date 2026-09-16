@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Web.Script.Serialization;
@@ -33,11 +34,16 @@ namespace PlayniteBoot
                 if (settings != null)
                 {
                     settings.PropertyChanged -= SettingsPropertyChanged;
+                    if (settings.Streaming != null)
+                    {
+                        settings.Streaming.PropertyChanged -= StreamingSettingsPropertyChanged;
+                    }
                 }
 
                 settings = value;
                 EnsureDefaultsAndMigrate();
                 settings.PropertyChanged += SettingsPropertyChanged;
+                settings.Streaming.PropertyChanged += StreamingSettingsPropertyChanged;
 
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(DirectCommand));
@@ -50,6 +56,11 @@ namespace PlayniteBoot
                 OnPropertyChanged(nameof(VolumePercent));
                 OnPropertyChanged(nameof(SelectedVideoPath));
                 OnPropertyChanged(nameof(SelectedVideoPathDisplay));
+                OnPropertyChanged(nameof(IsShortcutIconPbs));
+                OnPropertyChanged(nameof(IsShortcutIconPlaynite));
+                OnPropertyChanged(nameof(IsShortcutIconCustom));
+                OnPropertyChanged(nameof(IsCustomShortcutIcon));
+                OnPropertyChanged(nameof(CustomShortcutIconPathDisplay));
                 NotifyInstallationStatusChanged();
 
                 if (videoLibrary != null)
@@ -88,6 +99,24 @@ namespace PlayniteBoot
             ? string.Empty
             : GetConfiguredVideoPath();
 
+        public string ProductIconPath
+        {
+            get
+            {
+                try
+                {
+                    var directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    var path = Path.Combine(directory ?? string.Empty, "icon.png");
+                    return File.Exists(path) ? path : string.Empty;
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
+        }
+
+        public string BootVideoDescription => F("LOCPlayniteBootSetupVideoDescription", VideoLibraryService.AcceptedFormatsDisplay);
         public string AcceptedVideoFormats => F("LOCPlayniteBootAcceptedFormats", VideoLibraryService.AcceptedFormatsDisplay);
         public string AcceptedVideoFormatsToolTip => L("LOCPlayniteBootTipAcceptedFormats");
 
@@ -155,6 +184,73 @@ namespace PlayniteBoot
             : L("LOCPlayniteBootStatusConfigurationNeedsRepair");
         public string DesktopShortcutStatus => GetShortcutStatus(ShortcutLocation.Desktop);
         public string StartMenuShortcutStatus => GetShortcutStatus(ShortcutLocation.StartMenu);
+        public bool IsDesktopShortcutInstalled => IsShortcutInstalled(ShortcutLocation.Desktop);
+        public bool IsStartMenuShortcutInstalled => IsShortcutInstalled(ShortcutLocation.StartMenu);
+        public bool IsDesktopFullscreenLaunchEnabled => Settings != null && Settings.EnableDesktopFullscreenSwitch;
+        public bool IsStreamingPreloadEnabled => Settings?.Streaming != null && Settings.Streaming.Enabled;
+        public bool IsQuickSetupReady => IsDesktopFullscreenLaunchEnabled ||
+            IsDesktopShortcutInstalled ||
+            IsStartMenuShortcutInstalled;
+        public bool IsShortcutIconPbs
+        {
+            get => Settings == null || string.Equals(Settings.ShortcutIconMode, ShortcutIconModes.Pbs, StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                {
+                    SetShortcutIconMode(ShortcutIconModes.Pbs);
+                }
+            }
+        }
+
+        public bool IsShortcutIconPlaynite
+        {
+            get => Settings != null && string.Equals(Settings.ShortcutIconMode, ShortcutIconModes.Playnite, StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                {
+                    SetShortcutIconMode(ShortcutIconModes.Playnite);
+                }
+            }
+        }
+
+        public bool IsShortcutIconCustom
+        {
+            get => Settings != null && string.Equals(Settings.ShortcutIconMode, ShortcutIconModes.Custom, StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                {
+                    SetShortcutIconMode(ShortcutIconModes.Custom);
+                }
+            }
+        }
+
+        public bool IsCustomShortcutIcon => IsShortcutIconCustom;
+        public string CustomShortcutIconPathDisplay => IsCustomShortcutIcon
+            ? (string.IsNullOrWhiteSpace(Settings.CustomShortcutIconPath)
+                ? L("LOCPlayniteBootShortcutCustomIconNone")
+                : (!string.IsNullOrWhiteSpace(Settings.CustomShortcutIconFileName)
+                    ? Settings.CustomShortcutIconFileName
+                    : L("LOCPlayniteBootShortcutCustomIconSelected")))
+            : string.Empty;
+        public string DesktopLaunchMethodStatus => GetLaunchMethodStatus(
+            IsDesktopShortcutInstalled,
+            "LOCPlayniteBootSetupDesktopShortcutEnabled",
+            "LOCPlayniteBootSetupDesktopShortcutDisabled");
+        public string StartMenuLaunchMethodStatus => GetLaunchMethodStatus(
+            IsStartMenuShortcutInstalled,
+            "LOCPlayniteBootSetupStartMenuShortcutEnabled",
+            "LOCPlayniteBootSetupStartMenuShortcutDisabled");
+        public string DesktopFullscreenLaunchMethodStatus => GetLaunchMethodStatus(
+            IsDesktopFullscreenLaunchEnabled,
+            "LOCPlayniteBootSetupDesktopFullscreenEnabled",
+            "LOCPlayniteBootSetupDesktopFullscreenDisabled");
+        public string StreamingPreloadStatus => GetLaunchMethodStatus(
+            IsStreamingPreloadEnabled,
+            "LOCPlayniteBootSetupStreamingPreloadEnabled",
+            "LOCPlayniteBootSetupStreamingPreloadDisabled");
         public string ExtensionVersionDisplay
         {
             get
@@ -182,6 +278,7 @@ namespace PlayniteBoot
         public RelayCommand CreateStartMenuShortcutCommand { get; }
         public RelayCommand RemoveDesktopShortcutCommand { get; }
         public RelayCommand RemoveStartMenuShortcutCommand { get; }
+        public RelayCommand BrowseShortcutIconCommand { get; }
         public RelayCommand CopyDirectCommand { get; }
         public RelayCommand CopyPreloadCommand { get; }
         public RelayCommand CopyContinueCommand { get; }
@@ -209,7 +306,6 @@ namespace PlayniteBoot
             {
                 new LocalizedOption("standalone", L("LOCPlayniteBootOptionFallbackStandalone"))
             };
-
             BrowseVideoCommand = new RelayCommand(BrowseVideo);
             RefreshVideoLibraryCommand = new RelayCommand(() => RefreshVideoLibrary(true));
             OpenVideoFolderCommand = new RelayCommand(() => ExecuteAction(OpenVideoFolder));
@@ -220,6 +316,7 @@ namespace PlayniteBoot
             CreateStartMenuShortcutCommand = new RelayCommand(() => ExecuteAction(() => CreateShortcut(ShortcutLocation.StartMenu)));
             RemoveDesktopShortcutCommand = new RelayCommand(() => ExecuteAction(() => RemoveShortcut(ShortcutLocation.Desktop)));
             RemoveStartMenuShortcutCommand = new RelayCommand(() => ExecuteAction(() => RemoveShortcut(ShortcutLocation.StartMenu)));
+            BrowseShortcutIconCommand = new RelayCommand(() => ExecuteAction(BrowseShortcutIcon));
             CopyDirectCommand = new RelayCommand(() => CopyToClipboard(DirectCommand));
             CopyPreloadCommand = new RelayCommand(() => CopyToClipboard(PreloadCommand));
             CopyContinueCommand = new RelayCommand(() => CopyToClipboard(ContinueCommand));
@@ -248,6 +345,7 @@ namespace PlayniteBoot
         {
             Settings.SettingsVersion = PlayniteBootSettingsData.CurrentSettingsVersion;
             Settings.ShortcutName = (Settings.ShortcutName ?? string.Empty).Trim();
+            Settings.ShortcutIconMode = ShortcutIconModes.Normalize(Settings.ShortcutIconMode);
             if (IsManualMonitorSelection(Settings.Monitor))
             {
                 Settings.MonitorFallback = Settings.Monitor;
@@ -310,6 +408,25 @@ namespace PlayniteBoot
                 ValidateMinimum(errors, Settings.Streaming.PreloadAbandonTimeoutMilliseconds, 5000, L("LOCPlayniteBootLabelPreloadAbandonTimeout"));
             }
 
+            if (!ShortcutIconModes.IsValid(Settings.ShortcutIconMode))
+            {
+                errors.Add(L("LOCPlayniteBootValidationShortcutIconMode"));
+            }
+            else if (string.Equals(Settings.ShortcutIconMode, ShortcutIconModes.Custom, StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(Settings.CustomShortcutIconPath))
+                {
+                    errors.Add(L("LOCPlayniteBootValidationCustomShortcutIconMissing"));
+                }
+                else if (!string.Equals(Path.GetExtension(Settings.CustomShortcutIconPath), ".ico", StringComparison.OrdinalIgnoreCase))
+                {
+                    errors.Add(L("LOCPlayniteBootValidationCustomShortcutIconFormat"));
+                }
+                else if (!File.Exists(Settings.CustomShortcutIconPath))
+                {
+                    errors.Add(F("LOCPlayniteBootValidationShortcutIconFileMissing", Settings.CustomShortcutIconPath));
+                }
+            }
 
             ValidateShortcutName(errors, Settings.ShortcutName);
             return errors.Count == 0;
@@ -356,8 +473,39 @@ namespace PlayniteBoot
 
             if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.ShortcutName))
             {
-                OnPropertyChanged(nameof(DesktopShortcutStatus));
-                OnPropertyChanged(nameof(StartMenuShortcutStatus));
+                NotifyLaunchMethodStatusChanged();
+                return;
+            }
+
+            if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.ShortcutIconMode))
+            {
+                OnPropertyChanged(nameof(IsShortcutIconPbs));
+                OnPropertyChanged(nameof(IsShortcutIconPlaynite));
+                OnPropertyChanged(nameof(IsShortcutIconCustom));
+                OnPropertyChanged(nameof(IsCustomShortcutIcon));
+                OnPropertyChanged(nameof(CustomShortcutIconPathDisplay));
+                return;
+            }
+
+            if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.CustomShortcutIconPath) ||
+                eventArgs.PropertyName == nameof(PlayniteBootSettingsData.CustomShortcutIconFileName))
+            {
+                OnPropertyChanged(nameof(CustomShortcutIconPathDisplay));
+                return;
+            }
+
+            if (eventArgs.PropertyName == nameof(PlayniteBootSettingsData.EnableDesktopFullscreenSwitch))
+            {
+                NotifyLaunchMethodStatusChanged();
+            }
+        }
+
+        private void StreamingSettingsPropertyChanged(object sender, PropertyChangedEventArgs eventArgs)
+        {
+            if (eventArgs.PropertyName == nameof(StreamingSettings.Enabled))
+            {
+                OnPropertyChanged(nameof(IsStreamingPreloadEnabled));
+                OnPropertyChanged(nameof(StreamingPreloadStatus));
             }
         }
 
@@ -375,6 +523,22 @@ namespace PlayniteBoot
             }
 
             Settings.VideoEndBehavior = normalized;
+        }
+
+        private void SetShortcutIconMode(string mode)
+        {
+            if (Settings == null)
+            {
+                return;
+            }
+
+            var normalized = ShortcutIconModes.Normalize(mode);
+            if (string.Equals(Settings.ShortcutIconMode, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            Settings.ShortcutIconMode = normalized;
         }
 
         private void EnsureDefaultsAndMigrate()
@@ -446,6 +610,18 @@ namespace PlayniteBoot
                 settings.Streaming.PreloadAbandonTimeoutMilliseconds = 10000;
             }
 
+            if (settings.SettingsVersion < 6)
+            {
+                // Existing shortcuts historically used Playnite's Fullscreen icon.
+                // Preserve that appearance on upgrade. New installations default
+                // to the dedicated PBS icon.
+                settings.ShortcutIconMode = ShortcutIconModes.Playnite;
+            }
+            else
+            {
+                settings.ShortcutIconMode = ShortcutIconModes.Normalize(settings.ShortcutIconMode);
+            }
+
             settings.SettingsVersion = PlayniteBootSettingsData.CurrentSettingsVersion;
 
             if (string.IsNullOrWhiteSpace(settings.VideoPath))
@@ -498,6 +674,11 @@ namespace PlayniteBoot
             if (string.IsNullOrWhiteSpace(settings.ShortcutName))
             {
                 settings.ShortcutName = "Playnite Fullscreen";
+            }
+
+            if (settings.CustomShortcutIconPath == null)
+            {
+                settings.CustomShortcutIconPath = string.Empty;
             }
 
             if (string.IsNullOrWhiteSpace(settings.Streaming.FallbackMode))
@@ -601,6 +782,52 @@ namespace PlayniteBoot
         {
             Directory.CreateDirectory(plugin.Paths.MediaDirectory);
             ShellService.OpenFolder(plugin.Paths.MediaDirectory);
+        }
+
+        private void BrowseShortcutIcon()
+        {
+            var selected = plugin.PlayniteApi.Dialogs.SelectFile(L("LOCPlayniteBootShortcutIconFileFilter"));
+            if (string.IsNullOrWhiteSpace(selected))
+            {
+                return;
+            }
+
+            if (!string.Equals(Path.GetExtension(selected), ".ico", StringComparison.OrdinalIgnoreCase))
+            {
+                plugin.PlayniteApi.Dialogs.ShowErrorMessage(
+                    L("LOCPlayniteBootValidationCustomShortcutIconFormat"),
+                    PlayniteBootPlugin.ProductName);
+                return;
+            }
+
+            var sourcePath = Path.GetFullPath(selected);
+            var targetPath = ImportShortcutIcon(sourcePath);
+
+            Settings.CustomShortcutIconPath = targetPath;
+            Settings.CustomShortcutIconFileName = Path.GetFileName(sourcePath);
+            Settings.ShortcutIconMode = ShortcutIconModes.Custom;
+            RuntimeStatus = L("LOCPlayniteBootStatusCustomShortcutIconSelected");
+        }
+
+        private string ImportShortcutIcon(string sourcePath)
+        {
+            Directory.CreateDirectory(plugin.Paths.ShortcutIconsDirectory);
+
+            byte[] hash;
+            using (var stream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var sha256 = SHA256.Create())
+            {
+                hash = sha256.ComputeHash(stream);
+            }
+
+            var hashName = string.Concat(hash.Take(12).Select(value => value.ToString("x2", CultureInfo.InvariantCulture)));
+            var targetPath = Path.Combine(plugin.Paths.ShortcutIconsDirectory, hashName + ".ico");
+            if (!File.Exists(targetPath))
+            {
+                File.Copy(sourcePath, targetPath, false);
+            }
+
+            return targetPath;
         }
 
         private void RefreshVideoLibrary(bool updateStatus)
@@ -858,6 +1085,7 @@ namespace PlayniteBoot
             b.AppendLine("Video end behavior: " + VideoEndBehaviors.Normalize(Settings.VideoEndBehavior));
             b.AppendLine("Streaming preload: " + (Settings.Streaming != null && Settings.Streaming.Enabled ? "enabled" : "disabled"));
             b.AppendLine("Desktop -> Fullscreen boot: " + (Settings.EnableDesktopFullscreenSwitch ? "enabled" : "disabled"));
+            b.AppendLine("Shortcut icon: " + ShortcutIconModes.Normalize(Settings.ShortcutIconMode));
             b.AppendLine("Runtime installed: " + YesNo(File.Exists(plugin.Paths.ScriptPath) && File.Exists(plugin.Paths.ConfigPath)));
             b.AppendLine("Video exists: " + YesNo(videoExists));
             b.AppendLine("Desktop shortcut: " + YesNo(plugin.ShortcutExists(Settings, ShortcutLocation.Desktop)));
@@ -922,6 +1150,37 @@ namespace PlayniteBoot
             OnPropertyChanged(nameof(DesktopShortcutStatus));
             OnPropertyChanged(nameof(StartMenuShortcutStatus));
             OnPropertyChanged(nameof(ExtensionVersionDisplay));
+            NotifyLaunchMethodStatusChanged();
+        }
+
+        private void NotifyLaunchMethodStatusChanged()
+        {
+            OnPropertyChanged(nameof(IsQuickSetupReady));
+            OnPropertyChanged(nameof(IsDesktopShortcutInstalled));
+            OnPropertyChanged(nameof(IsStartMenuShortcutInstalled));
+            OnPropertyChanged(nameof(IsDesktopFullscreenLaunchEnabled));
+            OnPropertyChanged(nameof(IsStreamingPreloadEnabled));
+            OnPropertyChanged(nameof(DesktopLaunchMethodStatus));
+            OnPropertyChanged(nameof(StartMenuLaunchMethodStatus));
+            OnPropertyChanged(nameof(DesktopFullscreenLaunchMethodStatus));
+            OnPropertyChanged(nameof(StreamingPreloadStatus));
+        }
+
+        private static string GetLaunchMethodStatus(bool enabled, string enabledKey, string disabledKey)
+        {
+            return L(enabled ? enabledKey : disabledKey);
+        }
+
+        private bool IsShortcutInstalled(ShortcutLocation location)
+        {
+            try
+            {
+                return Settings != null && plugin.ShortcutExists(Settings, location);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private bool IsRuntimeConfigurationValid()

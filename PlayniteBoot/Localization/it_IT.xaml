@@ -126,8 +126,8 @@
     <sys:String x:Key="LOCPlayniteBootStatusRuntimeMissing">Il runtime non è ancora pronto. Usa Ripara runtime se la sincronizzazione automatica non si completa.</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusConfigurationValid">Valida</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusConfigurationNeedsRepair">Da riparare</sys:String>
-    <sys:String x:Key="LOCPlayniteBootStatusInstalled">● Installato</sys:String>
-    <sys:String x:Key="LOCPlayniteBootStatusNotInstalled">○ Non installato</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusInstalled">Installato</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusNotInstalled">Non installato</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusUnknown">Stato non disponibile</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusShortcutCreated">Collegamento “{0}” creato o aggiornato in {1}.</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusShortcutRemoved">Collegamento rimosso da {0}.</sys:String>
@@ -161,6 +161,66 @@
     <sys:String x:Key="LOCPlayniteBootErrorShortcutInstallerMissing">Installer dei collegamenti non trovato.</sys:String>
     <sys:String x:Key="LOCPlayniteBootErrorShortcutProcess">Impossibile avviare PowerShell per creare il collegamento.</sys:String>
     <sys:String x:Key="LOCPlayniteBootErrorShortcutTimeout">Timeout durante l'operazione sul collegamento.</sys:String>
-    <sys:String x:Key="LOCPlayniteBootShortcutDescription">Avvia Playnite Fullscreen con un video personalizzato e senza finestra console.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutDescription">Avvia Playnite Fullscreen tramite Playnite Boot Screen con il video di avvio configurato.</sys:String>
     <sys:String x:Key="LOCPlayniteBootVideoFileFilterLabel">File video</sys:String>
+
+    <!-- 0.8.1 setup-first UI -->
+    <sys:String x:Key="LOCPlayniteBootTabSetup">Configurazione rapida</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTabPlayback">Riproduzione</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTabAdvanced">Avanzate</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTabDiagnostics">Diagnostica</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootIntroSetup">Configura il tuo avvio personalizzato di Playnite in pochi passaggi. PBS mostra un video di boot mentre Playnite Fullscreen si sta aprendo.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroPlayback">Regola dove e come viene mostrato il video di avvio. Queste impostazioni si applicano a tutti i metodi di avvio PBS.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroAdvanced">Impostazioni avanzate per rilevamento e avvio. I valori predefiniti sono consigliati per la maggior parte delle configurazioni.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroDiagnostics">Manutenzione del runtime, log e informazioni diagnostiche.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootGroupLaunchMethods">1. Avvia Playnite con PBS</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupBootVideo">2. Scegli il video di avvio</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupVideoEndBehavior">3. Scegli quando mostrare Playnite</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupPbsShortcuts">Collegamenti PBS</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupDesktopFullscreen">Desktop → Fullscreen</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupDisplay">Schermo</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupReadiness">Rilevamento disponibilità</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupPlayniteLaunch">Avvio Playnite</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupExternalManualLaunch">Avvio esterno / manuale</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupShortcutState">Stato metodi di avvio</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootSetupShortcutsDescription">Crea un collegamento che avvia PBS prima di Playnite Fullscreen.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupRegularLauncherWarning">Il normale avvio di Playnite Fullscreen rimane invariato e non mostra la schermata di boot.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupUsageDescription">Scegli come avviare PBS, seleziona il tuo video e decidi quando mostrare Playnite.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupLaunchMethodsDescription">Scegli quando deve essere mostrato Playnite Boot Screen.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupVideoDescription">Scegli il video mostrato durante l'avvio di Playnite. Formati accettati: {0}.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootQuickSetupCompleteTitle">Pronto</sys:String>
+    <sys:String x:Key="LOCPlayniteBootQuickSetupCompleteDescription">Playnite Boot Screen è pronto per l'uso.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootQuickSetupIncompleteTitle">Configurazione necessaria</sys:String>
+    <sys:String x:Key="LOCPlayniteBootQuickSetupIncompleteDescription">Crea un collegamento PBS o abilita Desktop → Fullscreen.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupDesktopShortcutEnabled">Collegamento PBS sul Desktop installato</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupDesktopShortcutDisabled">Collegamento PBS sul Desktop non installato</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupStartMenuShortcutEnabled">Collegamento PBS nel menu Start installato</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupStartMenuShortcutDisabled">Collegamento PBS nel menu Start non installato</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupDesktopFullscreenEnabled">Integrazione Desktop a Fullscreen abilitata</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupDesktopFullscreenDisabled">Integrazione Desktop a Fullscreen disabilitata</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupStreamingPreloadEnabled">Supporto preload streaming abilitato</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupStreamingPreloadDisabled">Supporto preload streaming disabilitato</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootLabelShortcutIcon">Icona collegamento</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelCustomShortcutIcon">File .ico</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutIconPbs">Playnite Boot Screen</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutIconPlaynite">Playnite Fullscreen</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutIconCustom">Personalizzata (.ico)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutCustomIconNone">Nessun file .ico selezionato.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutCustomIconSelected">Icona personalizzata selezionata.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutIconFileFilter">File icona (*.ico)|*.ico</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonChooseShortcutIcon">Scegli .ico...</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusCustomShortcutIconSelected">Icona personalizzata copiata nella cartella dati di PBS.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootAdvancedManualDescription">Altri launcher possono richiamare PBS direttamente con questo comando. I launcher che avviano autonomamente Playnite.FullscreenApp.exe bypassano PBS, a meno che non integrino esplicitamente questo comando.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootDiagnosticsShortcutDescription">Lo stato dei collegamenti viene rilevato dai collegamenti gestiti da PBS. La configurazione dei launcher esterni non viene ispezionata.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootValidationShortcutIconMode">La modalità selezionata per l'icona del collegamento non è valida.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationCustomShortcutIconMissing">Scegli un file .ico personalizzato oppure seleziona un'altra icona per il collegamento.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationCustomShortcutIconFormat">Le icone personalizzate dei collegamenti devono usare il formato .ico.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationShortcutIconFileMissing">Il file dell'icona del collegamento non esiste: {0}</sys:String>
+
 </ResourceDictionary>

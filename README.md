@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/6d77a081-9165-4f0f-a6bb-785642ced0e7
 - Choose whether to reveal Playnite as soon as it is ready, wait for the video to finish, or loop until Playnite is ready.
 - Cover Playnite's built-in Desktop-to-Fullscreen transition with the configured boot video; enabled by default and optional in settings.
 - Managed runtime stored outside the replaceable extension installation directory.
-- Configurable Desktop and Start menu shortcut name.
+- Configurable Desktop and Start menu shortcut name and icon: Playnite Boot Screen, Playnite Fullscreen, or a custom `.ico`.
 - Streaming Preload and Continue commands shown directly in the settings page.
 - Public runtime marker for theme/helper plugins that need to suppress duplicate startup intros.
 - English and Italian localization.
@@ -52,10 +52,10 @@ Close Playnite, then run:
 
 ## Direct launch
 
-In **Installation and diagnostics**:
+In **Quick Setup**:
 
-1. choose a shortcut name;
-2. select **Create/update Desktop shortcut** or **Create/update Start shortcut**;
+1. choose a shortcut name and icon;
+2. select **Create/update** for the Desktop or Start menu shortcut;
 3. close Playnite completely;
 4. launch the new shortcut.
 
@@ -96,6 +96,7 @@ Persistent files are stored under Playnite's extension data directory:
 │   ├── cache\
 │   │   └── video-compat\
 │   └── logs\
+├── shortcut-icons\
 └── shortcut-state.json
 ```
 

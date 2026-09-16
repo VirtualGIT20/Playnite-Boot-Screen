@@ -20,6 +20,7 @@ namespace PlayniteBoot.Services
             "Launch-PlayniteBoot.vbs",
             "Install-Shortcut.ps1",
             "Test-Configuration.ps1",
+            "PlayniteBoot.ico",
             "VERSION.txt"
         };
 

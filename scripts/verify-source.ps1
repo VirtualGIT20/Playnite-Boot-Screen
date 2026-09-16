@@ -59,6 +59,39 @@ if ($keyDifferences.Count -gt 0) {
     throw "English and Italian localization keys differ:`n$($keyDifferences | Out-String)"
 }
 
+Write-Host 'Checking setup-first shortcut integration...'
+$settingsDataPath = Join-Path $root 'PlayniteBoot\Models\PlayniteBootSettingsData.cs'
+$settingsModelPath = Join-Path $root 'PlayniteBoot\PlayniteBootSettings.cs'
+$shortcutServicePath = Join-Path $root 'PlayniteBoot\Services\ShortcutService.cs'
+$shortcutInstallerPath = Join-Path $root 'PlayniteBoot\RuntimeTemplate\Install-Shortcut.ps1'
+$shortcutIconPath = Join-Path $root 'PlayniteBoot\RuntimeTemplate\PlayniteBoot.ico'
+$settingsViewPath = Join-Path $root 'PlayniteBoot\PlayniteBootSettingsView.xaml'
+foreach ($requiredPath in @($settingsDataPath, $settingsModelPath, $shortcutServicePath, $shortcutInstallerPath, $shortcutIconPath, $settingsViewPath)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw "Required setup/shortcut file not found: $requiredPath"
+    }
+}
+$settingsDataSource = Get-Content -LiteralPath $settingsDataPath -Raw -Encoding UTF8
+$settingsModelSource = Get-Content -LiteralPath $settingsModelPath -Raw -Encoding UTF8
+$shortcutServiceSource = Get-Content -LiteralPath $shortcutServicePath -Raw -Encoding UTF8
+$shortcutInstallerSource = Get-Content -LiteralPath $shortcutInstallerPath -Raw -Encoding UTF8
+$settingsViewSource = Get-Content -LiteralPath $settingsViewPath -Raw -Encoding UTF8
+$shortcutChecks = @(
+    @{ Name = 'setup-first tab'; Pass = $settingsViewSource -match 'LOCPlayniteBootTabSetup' },
+    @{ Name = 'shortcut icon modes'; Pass = $settingsDataSource -match 'ShortcutIconModes' -and $settingsDataSource -match 'CurrentSettingsVersion = 6' },
+    @{ Name = 'custom ICO picker'; Pass = $settingsModelSource -match 'BrowseShortcutIconCommand' -and $settingsModelSource -match 'ShortcutIconsDirectory' -and $settingsModelSource -match 'SHA256.Create' },
+    @{ Name = 'explicit shortcut icon handoff'; Pass = $shortcutServiceSource -match 'PLAYNITEBOOT_SHORTCUT_ICON_B64' -and $shortcutInstallerSource -match 'PLAYNITEBOOT_SHORTCUT_ICON_B64' },
+    @{ Name = 'bundled PBS shortcut icon'; Pass = (Get-Item -LiteralPath $shortcutIconPath).Length -gt 1024 }
+)
+$failedShortcutChecks = @($shortcutChecks | Where-Object { -not $_.Pass })
+foreach ($check in $shortcutChecks) {
+    Write-Host ("Setup/shortcut {0}: {1}" -f $check.Name, $(if ($check.Pass) { 'OK' } else { 'FAILED' }))
+}
+if ($failedShortcutChecks.Count -gt 0) {
+    throw 'Setup-first shortcut integration is incomplete.'
+}
+Write-Host 'Setup-first shortcut integration: OK'
+
 Write-Host 'Checking runtime and media files...'
 $runtimeVersionPath = Join-Path $root 'PlayniteBoot\RuntimeTemplate\VERSION.txt'
 $runtimeVersion = (Get-Content -LiteralPath $runtimeVersionPath -Raw).Trim()
@@ -75,7 +108,10 @@ $runtimeBehaviorChecks = @(
     @{ Name = 'foreground polling removed'; Pass = $runtimeScript -notmatch '\$yieldForegroundIfNeeded' },
     @{ Name = 'Playnite monitor following'; Pass = $runtimeScript -match 'fullscreenConfig\.json' },
     @{ Name = 'monitor fallback'; Pass = $runtimeScript -match 'MonitorFallback' },
-    @{ Name = 'cross-monitor readiness'; Pass = $runtimeScript -match 'largest intersection area|bestIntersectionArea' }
+    @{ Name = 'cross-monitor readiness'; Pass = $runtimeScript -match 'largest intersection area|bestIntersectionArea' },
+    @{ Name = 'PID top-level window readiness fallback'; Pass = $runtimeScript -match 'GetTopLevelWindowsForProcess' -and $runtimeScript -match 'GetWindowThreadProcessId' -and $runtimeScript -match 'Preserve the 0\.8\.0 behavior whenever MainWindowHandle' -and $runtimeScript -match '\$windowReadiness\.WindowHandle' },
+    @{ Name = 'Switch topology-aware readiness'; Pass = $runtimeScript -match 'Get-ScreenTopologySignature' -and $runtimeScript -match 'Display topology changed during Switch readiness' -and $runtimeScript -match '\$readinessScreens' },
+    @{ Name = 'MediaFailed black-surface fallback'; Pass = $runtimeScript -match 'The failed video surface was hidden' -and $runtimeScript -match '\$media\.Visibility = \[System\.Windows\.Visibility\]::Hidden' -and $runtimeScript -match '-not \$state\.VideoFailed' }
 )
 
 $failedRuntimeBehaviorChecks = @($runtimeBehaviorChecks | Where-Object { -not $_.Pass })
@@ -112,7 +148,6 @@ Write-Host 'Checking managed video library integration...'
 $videoLibraryPath = Join-Path $root 'PlayniteBoot\Services\VideoLibraryService.cs'
 $videoCompatibilityPath = Join-Path $root 'PlayniteBoot\Services\VideoCompatibilityService.cs'
 $configWriterPath = Join-Path $root 'PlayniteBoot\Services\RuntimeConfigWriter.cs'
-$settingsViewPath = Join-Path $root 'PlayniteBoot\PlayniteBootSettingsView.xaml'
 foreach ($requiredPath in @($videoLibraryPath, $videoCompatibilityPath, $configWriterPath, $settingsViewPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
         throw "Required video library file not found: $requiredPath"

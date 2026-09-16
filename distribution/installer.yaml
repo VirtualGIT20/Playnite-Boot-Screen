@@ -1,5 +1,14 @@
 AddonId: PlayniteBoot_71b5c099-3c25-4fe7-b26f-1262c7f0e138
 Packages:
+  - Version: 0.8.1
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-09-16
+    PackageUrl: https://github.com/VirtualGIT20/Playnite-Boot-Screen/releases/download/v0.8.1/Playnite-Boot-Screen-v0.8.1.pext
+    Changelog:
+      - Add a guided Quick Setup page and selectable PBS, Playnite Fullscreen, or custom shortcut icons.
+      - Fix Desktop-to-Fullscreen readiness when Windows changes display topology during startup.
+      - Add an exact-PID top-level window fallback while preserving MainWindowHandle as the primary readiness path.
+      - Hide a failed video surface and continue with the safe readiness fallback instead of leaving a frozen frame.
   - Version: 0.8.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-14

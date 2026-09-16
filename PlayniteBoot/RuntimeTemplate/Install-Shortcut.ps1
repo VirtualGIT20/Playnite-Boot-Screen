@@ -32,6 +32,7 @@ function Get-Utf8Base64EnvironmentValue {
 
 $ShortcutName = Get-Utf8Base64EnvironmentValue -Name 'PLAYNITEBOOT_SHORTCUT_NAME_B64' -Fallback $ShortcutName
 $ShortcutDescription = Get-Utf8Base64EnvironmentValue -Name 'PLAYNITEBOOT_SHORTCUT_DESCRIPTION_B64' -Fallback $ShortcutDescription
+$ExplicitIconPathValue = Get-Utf8Base64EnvironmentValue -Name 'PLAYNITEBOOT_SHORTCUT_ICON_B64' -Fallback $null
 
 if ([string]::IsNullOrWhiteSpace($ShortcutName)) {
     throw 'ShortcutName cannot be empty.'
@@ -92,29 +93,44 @@ function Resolve-ConfiguredPath([string]$Value) {
     return [IO.Path]::GetFullPath((Join-Path $scriptDirectory $expanded))
 }
 
-$iconCandidates = New-Object System.Collections.Generic.List[string]
-
-# First choice: an explicit Playnite path configured in config.json.
-if (Test-Path -LiteralPath $configPath -PathType Leaf) {
-    try {
-        $config = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
-        if ($config.playniteExecutable -and [string]$config.playniteExecutable -ne 'auto') {
-            $configuredPlaynite = Resolve-ConfiguredPath ([string]$config.playniteExecutable)
-            if ($configuredPlaynite) { $iconCandidates.Add($configuredPlaynite) }
-        }
+$iconPath = $null
+if (-not [string]::IsNullOrWhiteSpace($ExplicitIconPathValue)) {
+    $explicitIconPath = Resolve-ConfiguredPath $ExplicitIconPathValue
+    if ($explicitIconPath -and (Test-Path -LiteralPath $explicitIconPath -PathType Leaf)) {
+        $iconPath = $explicitIconPath
     }
-    catch {
-        Write-Warning "Could not read config.json to determine the icon: $($_.Exception.Message)"
+    else {
+        Write-Warning "Configured shortcut icon was not found: $ExplicitIconPathValue"
     }
 }
 
-if ($env:LOCALAPPDATA) { $iconCandidates.Add((Join-Path $env:LOCALAPPDATA 'Playnite\Playnite.FullscreenApp.exe')) }
-if ($env:ProgramFiles) { $iconCandidates.Add((Join-Path $env:ProgramFiles 'Playnite\Playnite.FullscreenApp.exe')) }
-if (${env:ProgramFiles(x86)}) { $iconCandidates.Add((Join-Path ${env:ProgramFiles(x86)} 'Playnite\Playnite.FullscreenApp.exe')) }
+# Without an explicit icon, retain the historical behavior and use Playnite's
+# Fullscreen executable icon.
+if (-not $iconPath) {
+    $iconCandidates = New-Object System.Collections.Generic.List[string]
 
-$iconPath = $iconCandidates |
-    Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) } |
-    Select-Object -First 1
+    # First choice: an explicit Playnite path configured in config.json.
+    if (Test-Path -LiteralPath $configPath -PathType Leaf) {
+        try {
+            $config = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($config.playniteExecutable -and [string]$config.playniteExecutable -ne 'auto') {
+                $configuredPlaynite = Resolve-ConfiguredPath ([string]$config.playniteExecutable)
+                if ($configuredPlaynite) { $iconCandidates.Add($configuredPlaynite) }
+            }
+        }
+        catch {
+            Write-Warning "Could not read config.json to determine the icon: $($_.Exception.Message)"
+        }
+    }
+
+    if ($env:LOCALAPPDATA) { $iconCandidates.Add((Join-Path $env:LOCALAPPDATA 'Playnite\Playnite.FullscreenApp.exe')) }
+    if ($env:ProgramFiles) { $iconCandidates.Add((Join-Path $env:ProgramFiles 'Playnite\Playnite.FullscreenApp.exe')) }
+    if (${env:ProgramFiles(x86)}) { $iconCandidates.Add((Join-Path ${env:ProgramFiles(x86)} 'Playnite\Playnite.FullscreenApp.exe')) }
+
+    $iconPath = $iconCandidates |
+        Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) } |
+        Select-Object -First 1
+}
 
 $shell = New-Object -ComObject WScript.Shell
 foreach ($shortcutPath in $shortcutPaths) {

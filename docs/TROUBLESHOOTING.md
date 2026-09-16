@@ -36,7 +36,7 @@ Diagnostic steps:
 
 1. Repeat the launch with Playnite's default Fullscreen theme.
 2. Check `%APPDATA%\Playnite\playnite.log` and `%APPDATA%\Playnite\extensions.log`.
-3. Open the Playnite Boot Screen runtime log from **Installation and diagnostics → Open logs**.
+3. Open the Playnite Boot Screen runtime log from **Diagnostics → Open logs**.
 4. Check whether the runtime log contains `Launcher exited with code 0`.
 
 When the launcher exits successfully, investigate the active Fullscreen theme, virtual-display configuration, and Playnite rendering logs before treating the boot overlay as the cause.
@@ -50,7 +50,7 @@ Playnite logs:
 %APPDATA%\Playnite\extensions.log
 ```
 
-Runtime logs are available through **Installation and diagnostics → Open logs**.
+Runtime logs are available through **Diagnostics → Open logs**.
 
 The active runtime log is limited to 2 MiB. When it reaches the limit, it is moved to `PlayniteBoot.log.1`; any older backup is replaced.
 

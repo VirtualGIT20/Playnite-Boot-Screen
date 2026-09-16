@@ -5,122 +5,308 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignHeight="760" d:DesignWidth="920">
+    <UserControl.Resources>
+        <Style x:Key="PbsStatusDotStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="9" />
+            <Setter Property="Height" Value="9" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="Stroke" Value="#77808E" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,7,0" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="True">
+                    <Setter Property="Fill" Value="#48C774" />
+                    <Setter Property="Stroke" Value="#48C774" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Margin="8">
         <TabControl>
-            <TabItem Header="{DynamicResource LOCPlayniteBootTabGeneral}">
+            <TabItem Header="{DynamicResource LOCPlayniteBootTabSetup}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
-                        <TextBlock Text="{DynamicResource LOCPlayniteBootIntroGeneral}"
-                                   TextWrapping="Wrap" Margin="0,0,0,12" />
-
-                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupVideo}" Margin="0,0,0,12">
-                            <Grid Margin="10">
+                        <Border BorderBrush="#5577808E" Background="#0A77808E" BorderThickness="1"
+                                CornerRadius="4" Padding="12" Margin="0,2,0,14">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="210" />
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
+                                <Image Source="{Binding ProductIconPath}" Width="42" Height="42"
+                                       Stretch="Uniform" Margin="0,1,12,0" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Playnite Boot Screen" FontSize="18" FontWeight="SemiBold" />
+                                    <TextBlock Text="{DynamicResource LOCPlayniteBootIntroSetup}"
+                                               TextWrapping="Wrap" Margin="0,7,0,0" />
+                                    <TextBlock Text="{DynamicResource LOCPlayniteBootSetupUsageDescription}"
+                                               TextWrapping="Wrap" Opacity="0.82" Margin="0,5,0,0" />
+                                </StackPanel>
 
-                                <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelVideoFile}"
-                                           VerticalAlignment="Center" Margin="0,4" />
-                                <ComboBox Grid.Row="0" Grid.Column="1"
-                                          ItemsSource="{Binding VideoOptions}"
-                                          SelectedValuePath="Path"
-                                          SelectedValue="{Binding SelectedVideoPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          ToolTip="{Binding SelectedVideoPathDisplay}"
-                                          Margin="6,3">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Label}" ToolTip="{Binding ToolTip}" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                                            Margin="20,0,2,0"
+                                            ToolTip="{DynamicResource LOCPlayniteBootQuickSetupCompleteDescription}">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsQuickSetupReady}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <Ellipse Style="{StaticResource PbsStatusDotStyle}" Tag="True" />
+                                    <TextBlock Text="{DynamicResource LOCPlayniteBootQuickSetupCompleteTitle}"
+                                               FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
 
-                                <TextBlock Grid.Row="1" Grid.Column="1"
-                                           Text="{Binding SelectedVideoPathDisplay}"
-                                           ToolTip="{Binding SelectedVideoPathDisplay}"
-                                           TextTrimming="CharacterEllipsis"
-                                           Opacity="0.72"
-                                           Margin="6,0,6,5" />
-
-                                <TextBlock Grid.Row="2" Grid.Column="1"
-                                           Text="{Binding AcceptedVideoFormats}"
-                                           ToolTip="{Binding AcceptedVideoFormatsToolTip}"
-                                           TextWrapping="Wrap" Opacity="0.8" Margin="6,4,6,7" />
-
-                                <WrapPanel Grid.Row="3" Grid.Column="1" Margin="3,0,3,5">
-                                    <Button Content="{DynamicResource LOCPlayniteBootButtonRefreshVideos}"
-                                            Command="{Binding RefreshVideoLibraryCommand}" Margin="3" Padding="12,3" />
-                                    <Button Content="{DynamicResource LOCPlayniteBootButtonOpenVideoFolder}"
-                                            Command="{Binding OpenVideoFolderCommand}" Margin="3" Padding="12,3" />
-                                    <Button Content="{DynamicResource LOCPlayniteBootButtonBrowseExternal}"
-                                            Command="{Binding BrowseVideoCommand}" Margin="3" Padding="12,3" />
-                                    <Button Content="{DynamicResource LOCPlayniteBootButtonDefaultVideo}"
-                                            Command="{Binding RestoreDefaultVideoCommand}" Margin="3" Padding="12,3" />
-                                </WrapPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                                            Margin="20,0,2,0"
+                                            ToolTip="{DynamicResource LOCPlayniteBootQuickSetupIncompleteDescription}">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsQuickSetupReady}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <Ellipse Style="{StaticResource PbsStatusDotStyle}" Tag="False" />
+                                    <TextBlock Text="{DynamicResource LOCPlayniteBootQuickSetupIncompleteTitle}"
+                                               FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
                             </Grid>
+                        </Border>
+
+                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupLaunchMethods}" Margin="0,0,0,12">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="{DynamicResource LOCPlayniteBootSetupLaunchMethodsDescription}"
+                                           TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,10" />
+                                <TextBlock Text="{DynamicResource LOCPlayniteBootGroupPbsShortcuts}"
+                                           FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <TextBlock Text="{DynamicResource LOCPlayniteBootSetupShortcutsDescription}"
+                                           TextWrapping="Wrap" Opacity="0.76" Margin="0,0,0,8" />
+
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelShortcutName}"
+                                               VerticalAlignment="Center" Margin="0,4" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                                             Text="{Binding Settings.ShortcutName, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="6,3,0,3" />
+
+                                    <TextBlock Grid.Row="1" Text="{DynamicResource LOCPlayniteBootLabelShortcutIcon}"
+                                               VerticalAlignment="Center" Margin="0,6" />
+                                    <WrapPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="6,3,0,3">
+                                        <RadioButton GroupName="ShortcutIconMode"
+                                                     Content="{DynamicResource LOCPlayniteBootShortcutIconPbs}"
+                                                     IsChecked="{Binding IsShortcutIconPbs, Mode=TwoWay}"
+                                                     Margin="0,0,16,0" />
+                                        <RadioButton GroupName="ShortcutIconMode"
+                                                     Content="{DynamicResource LOCPlayniteBootShortcutIconPlaynite}"
+                                                     IsChecked="{Binding IsShortcutIconPlaynite, Mode=TwoWay}"
+                                                     Margin="0,0,16,0" />
+                                        <RadioButton GroupName="ShortcutIconMode"
+                                                     Content="{DynamicResource LOCPlayniteBootShortcutIconCustom}"
+                                                     IsChecked="{Binding IsShortcutIconCustom, Mode=TwoWay}" />
+                                    </WrapPanel>
+
+                                    <Grid Grid.Row="2" Grid.ColumnSpan="3">
+                                        <Grid.Style>
+                                            <Style TargetType="Grid">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCustomShortcutIcon}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="150" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{DynamicResource LOCPlayniteBootLabelCustomShortcutIcon}"
+                                                   VerticalAlignment="Center" Margin="0,6" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding CustomShortcutIconPathDisplay}"
+                                                   TextTrimming="CharacterEllipsis" Opacity="0.78"
+                                                   VerticalAlignment="Center" Margin="6,3" />
+                                        <Button Grid.Column="2"
+                                                Content="{DynamicResource LOCPlayniteBootButtonChooseShortcutIcon}"
+                                                Command="{Binding BrowseShortcutIconCommand}"
+                                                Margin="6,3,0,3" Padding="12,3" />
+                                    </Grid>
+
+                                    <TextBlock Grid.Row="3" Text="{DynamicResource LOCPlayniteBootShortcutDesktop}"
+                                               VerticalAlignment="Center" Margin="0,6" />
+                                    <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="6">
+                                        <Ellipse Style="{StaticResource PbsStatusDotStyle}"
+                                                 Tag="{Binding IsDesktopShortcutInstalled}" />
+                                        <TextBlock Text="{Binding DesktopShortcutStatus}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <WrapPanel Grid.Row="3" Grid.Column="2" Margin="6,2,0,2">
+                                        <Button Content="{DynamicResource LOCPlayniteBootButtonCreateOrUpdateShortcut}"
+                                                Command="{Binding CreateDesktopShortcutCommand}"
+                                                Margin="0,0,8,4" Padding="12,4" />
+                                        <Button Content="{DynamicResource LOCPlayniteBootButtonRemoveShortcut}"
+                                                Command="{Binding RemoveDesktopShortcutCommand}"
+                                                Margin="0,0,0,4" Padding="12,4" />
+                                    </WrapPanel>
+
+                                    <TextBlock Grid.Row="4" Text="{DynamicResource LOCPlayniteBootShortcutStartMenu}"
+                                               VerticalAlignment="Center" Margin="0,6" />
+                                    <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="6">
+                                        <Ellipse Style="{StaticResource PbsStatusDotStyle}"
+                                                 Tag="{Binding IsStartMenuShortcutInstalled}" />
+                                        <TextBlock Text="{Binding StartMenuShortcutStatus}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <WrapPanel Grid.Row="4" Grid.Column="2" Margin="6,2,0,2">
+                                        <Button Content="{DynamicResource LOCPlayniteBootButtonCreateOrUpdateShortcut}"
+                                                Command="{Binding CreateStartMenuShortcutCommand}"
+                                                Margin="0,0,8,4" Padding="12,4" />
+                                        <Button Content="{DynamicResource LOCPlayniteBootButtonRemoveShortcut}"
+                                                Command="{Binding RemoveStartMenuShortcutCommand}"
+                                                Margin="0,0,0,4" Padding="12,4" />
+                                    </WrapPanel>
+                                </Grid>
+
+                                <TextBlock Text="{DynamicResource LOCPlayniteBootSetupRegularLauncherWarning}"
+                                           TextWrapping="Wrap" Opacity="0.68" Margin="0,3,0,0" />
+
+                                <Separator Margin="0,10,0,10" />
+
+                                <TextBlock Text="{DynamicResource LOCPlayniteBootGroupDesktopFullscreen}"
+                                           FontWeight="SemiBold" Margin="0,0,0,7" />
+                                <CheckBox Content="{DynamicResource LOCPlayniteBootCheckDesktopFullscreenSwitch}"
+                                          IsChecked="{Binding Settings.EnableDesktopFullscreenSwitch}"
+                                          ToolTip="{DynamicResource LOCPlayniteBootTipDesktopFullscreenSwitch}"
+                                          Margin="0,0,0,2" />
+                            </StackPanel>
                         </GroupBox>
 
-                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupPlayback}" Margin="0,0,0,12">
+                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupBootVideo}" Margin="0,0,0,12">
                             <StackPanel Margin="10">
-                                <TextBlock Text="{DynamicResource LOCPlayniteBootLabelWhenToShowPlaynite}"
-                                           FontWeight="SemiBold" Margin="0,0,0,7" />
+                                <TextBlock Text="{Binding BootVideoDescription}"
+                                           ToolTip="{Binding AcceptedVideoFormatsToolTip}"
+                                           TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,8" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="190" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
 
+                                    <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelVideoFile}"
+                                               VerticalAlignment="Center" Margin="0,4" />
+                                    <ComboBox Grid.Row="0" Grid.Column="1"
+                                              ItemsSource="{Binding VideoOptions}"
+                                              SelectedValuePath="Path"
+                                              SelectedValue="{Binding SelectedVideoPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              ToolTip="{Binding SelectedVideoPathDisplay}"
+                                              Margin="6,3">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" ToolTip="{Binding ToolTip}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Text="{Binding SelectedVideoPathDisplay}"
+                                               ToolTip="{Binding SelectedVideoPathDisplay}"
+                                               TextTrimming="CharacterEllipsis"
+                                               Opacity="0.72" Margin="6,0,6,3" />
+
+                                    <WrapPanel Grid.Row="2" Grid.Column="1" Margin="3,0,3,3">
+                                        <Button Content="{DynamicResource LOCPlayniteBootButtonRefreshVideos}"
+                                                Command="{Binding RefreshVideoLibraryCommand}" Margin="3" Padding="12,3" />
+                                        <Button Content="{DynamicResource LOCPlayniteBootButtonOpenVideoFolder}"
+                                                Command="{Binding OpenVideoFolderCommand}" Margin="3" Padding="12,3" />
+                                        <Button Content="{DynamicResource LOCPlayniteBootButtonBrowseExternal}"
+                                                Command="{Binding BrowseVideoCommand}" Margin="3" Padding="12,3" />
+                                        <Button Content="{DynamicResource LOCPlayniteBootButtonDefaultVideo}"
+                                                Command="{Binding RestoreDefaultVideoCommand}" Margin="3" Padding="12,3" />
+                                    </WrapPanel>
+                                </Grid>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupVideoEndBehavior}" Margin="0,0,0,12">
+                            <StackPanel Margin="10">
                                 <RadioButton GroupName="VideoEndBehavior"
                                              IsChecked="{Binding IsVideoEndReady, Mode=TwoWay}"
-                                             Margin="0,3,0,7">
+                                             Margin="0,3,0,6">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayniteBootVideoEndReady}" />
                                         <TextBlock Text="{DynamicResource LOCPlayniteBootVideoEndReadyDescription}"
-                                                   TextWrapping="Wrap" Opacity="0.72" Margin="0,2,0,0" />
+                                                   TextWrapping="Wrap" Opacity="0.72" Margin="0,1,0,0" />
                                     </StackPanel>
                                 </RadioButton>
 
                                 <RadioButton GroupName="VideoEndBehavior"
                                              IsChecked="{Binding IsVideoEndWait, Mode=TwoWay}"
-                                             Margin="0,3,0,7">
+                                             Margin="0,3,0,6">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayniteBootVideoEndWait}" />
                                         <TextBlock Text="{DynamicResource LOCPlayniteBootVideoEndWaitDescription}"
-                                                   TextWrapping="Wrap" Opacity="0.72" Margin="0,2,0,0" />
+                                                   TextWrapping="Wrap" Opacity="0.72" Margin="0,1,0,0" />
                                     </StackPanel>
                                 </RadioButton>
 
                                 <RadioButton GroupName="VideoEndBehavior"
                                              IsChecked="{Binding IsVideoEndLoop, Mode=TwoWay}"
-                                             Margin="0,3,0,10">
+                                             Margin="0,3,0,0">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayniteBootVideoEndLoop}" />
                                         <TextBlock Text="{DynamicResource LOCPlayniteBootVideoEndLoopDescription}"
-                                                   TextWrapping="Wrap" Opacity="0.72" Margin="0,2,0,0" />
+                                                   TextWrapping="Wrap" Opacity="0.72" Margin="0,1,0,0" />
                                     </StackPanel>
                                 </RadioButton>
-
-                                <CheckBox Content="{DynamicResource LOCPlayniteBootCheckHideCursor}"
-                                          IsChecked="{Binding Settings.HideMouseCursor}" Margin="0,4,0,0" />
                             </StackPanel>
                         </GroupBox>
 
-                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupPlayniteIntegration}" Margin="0,0,0,12">
-                            <StackPanel Margin="10">
-                                <CheckBox Content="{DynamicResource LOCPlayniteBootCheckDesktopFullscreenSwitch}"
-                                          IsChecked="{Binding Settings.EnableDesktopFullscreenSwitch}"
-                                          ToolTip="{DynamicResource LOCPlayniteBootTipDesktopFullscreenSwitch}" />
-                            </StackPanel>
-                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupScreen}" Margin="0,0,0,12">
+            <TabItem Header="{DynamicResource LOCPlayniteBootTabPlayback}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="{DynamicResource LOCPlayniteBootIntroPlayback}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupDisplay}" Margin="0,0,0,12">
                             <Grid Margin="10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="210" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
@@ -139,6 +325,10 @@
                                           DisplayMemberPath="Label" SelectedValuePath="Value"
                                           SelectedValue="{Binding Settings.VideoStretch, UpdateSourceTrigger=PropertyChanged}"
                                           Margin="6,3" />
+
+                                <CheckBox Grid.Row="2" Grid.Column="1"
+                                          Content="{DynamicResource LOCPlayniteBootCheckHideCursor}"
+                                          IsChecked="{Binding Settings.HideMouseCursor}" Margin="6,7,6,3" />
                             </Grid>
                         </GroupBox>
 
@@ -184,80 +374,6 @@
                                          Margin="6,3" />
                             </Grid>
                         </GroupBox>
-
-                        <Expander Header="{DynamicResource LOCPlayniteBootExpanderAdvanced}" IsExpanded="False" Margin="0,0,0,12">
-                            <Border Padding="10" Margin="0,6,0,0">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="270" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-
-                                    <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelMinimumDuration}"
-                                               VerticalAlignment="Center" Margin="0,4"
-                                               ToolTip="{DynamicResource LOCPlayniteBootTipMinimumDuration}" />
-                                    <TextBox Grid.Row="0" Grid.Column="1"
-                                             Text="{Binding Settings.MinimumVideoMilliseconds, UpdateSourceTrigger=PropertyChanged}"
-                                             ToolTip="{DynamicResource LOCPlayniteBootTipMinimumDuration}" Margin="6,3" />
-
-                                    <TextBlock Grid.Row="1" Text="{DynamicResource LOCPlayniteBootLabelReadyStability}"
-                                               VerticalAlignment="Center" Margin="0,4" />
-                                    <TextBox Grid.Row="1" Grid.Column="1"
-                                             Text="{Binding Settings.ReadyStabilityMilliseconds, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="6,3" />
-
-                                    <TextBlock Grid.Row="2" Text="{DynamicResource LOCPlayniteBootLabelStartTimeout}"
-                                               VerticalAlignment="Center" Margin="0,4" />
-                                    <TextBox Grid.Row="2" Grid.Column="1"
-                                             Text="{Binding Settings.StartTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="6,3" />
-
-                                    <TextBlock Grid.Row="3" Text="{DynamicResource LOCPlayniteBootLabelVideoReadyPosition}"
-                                               VerticalAlignment="Center" Margin="0,4" />
-                                    <TextBox Grid.Row="3" Grid.Column="1"
-                                             Text="{Binding Settings.VideoReadyPositionMilliseconds, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="6,3" />
-
-                                    <TextBlock Grid.Row="4" Text="{DynamicResource LOCPlayniteBootLabelVideoReadySamples}"
-                                               VerticalAlignment="Center" Margin="0,4" />
-                                    <TextBox Grid.Row="4" Grid.Column="1"
-                                             Text="{Binding Settings.VideoReadyAdvanceSamples, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="6,3" />
-
-                                    <TextBlock Grid.Row="5" Text="{DynamicResource LOCPlayniteBootLabelVideoReadyTimeout}"
-                                               VerticalAlignment="Center" Margin="0,4" />
-                                    <TextBox Grid.Row="5" Grid.Column="1"
-                                             Text="{Binding Settings.VideoReadyTimeoutMilliseconds, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="6,3" />
-
-                                    <TextBlock Grid.Row="6" Text="{DynamicResource LOCPlayniteBootLabelPlayniteExecutable}"
-                                               VerticalAlignment="Center" Margin="0,4"
-                                               ToolTip="{DynamicResource LOCPlayniteBootTipPlayniteExecutable}" />
-                                    <TextBox Grid.Row="6" Grid.Column="1"
-                                             Text="{Binding Settings.PlayniteExecutable, UpdateSourceTrigger=PropertyChanged}"
-                                             ToolTip="{DynamicResource LOCPlayniteBootTipPlayniteExecutable}" Margin="6,3" />
-
-                                    <TextBlock Grid.Row="7" Text="{DynamicResource LOCPlayniteBootLabelLaunchArguments}"
-                                               VerticalAlignment="Center" Margin="0,4" />
-                                    <TextBox Grid.Row="7" Grid.Column="1"
-                                             Text="{Binding Settings.LaunchArguments, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="6,3" />
-                                </Grid>
-                            </Border>
-                        </Expander>
-
-                        <Button Content="{DynamicResource LOCPlayniteBootButtonResetSettings}"
-                                Command="{Binding ResetSettingsCommand}" HorizontalAlignment="Left" Padding="12,4" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -354,9 +470,120 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="{DynamicResource LOCPlayniteBootTabInstallation}">
+            <TabItem Header="{DynamicResource LOCPlayniteBootTabAdvanced}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
+                        <TextBlock Text="{DynamicResource LOCPlayniteBootIntroAdvanced}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupReadiness}" Margin="0,0,0,12">
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="270" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelMinimumDuration}"
+                                           VerticalAlignment="Center" Margin="0,4"
+                                           ToolTip="{DynamicResource LOCPlayniteBootTipMinimumDuration}" />
+                                <TextBox Grid.Row="0" Grid.Column="1"
+                                         Text="{Binding Settings.MinimumVideoMilliseconds, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="{DynamicResource LOCPlayniteBootTipMinimumDuration}" Margin="6,3" />
+
+                                <TextBlock Grid.Row="1" Text="{DynamicResource LOCPlayniteBootLabelReadyStability}"
+                                           VerticalAlignment="Center" Margin="0,4" />
+                                <TextBox Grid.Row="1" Grid.Column="1"
+                                         Text="{Binding Settings.ReadyStabilityMilliseconds, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="6,3" />
+
+                                <TextBlock Grid.Row="2" Text="{DynamicResource LOCPlayniteBootLabelStartTimeout}"
+                                           VerticalAlignment="Center" Margin="0,4" />
+                                <TextBox Grid.Row="2" Grid.Column="1"
+                                         Text="{Binding Settings.StartTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="6,3" />
+
+                                <TextBlock Grid.Row="3" Text="{DynamicResource LOCPlayniteBootLabelVideoReadyPosition}"
+                                           VerticalAlignment="Center" Margin="0,4" />
+                                <TextBox Grid.Row="3" Grid.Column="1"
+                                         Text="{Binding Settings.VideoReadyPositionMilliseconds, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="6,3" />
+
+                                <TextBlock Grid.Row="4" Text="{DynamicResource LOCPlayniteBootLabelVideoReadySamples}"
+                                           VerticalAlignment="Center" Margin="0,4" />
+                                <TextBox Grid.Row="4" Grid.Column="1"
+                                         Text="{Binding Settings.VideoReadyAdvanceSamples, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="6,3" />
+
+                                <TextBlock Grid.Row="5" Text="{DynamicResource LOCPlayniteBootLabelVideoReadyTimeout}"
+                                           VerticalAlignment="Center" Margin="0,4" />
+                                <TextBox Grid.Row="5" Grid.Column="1"
+                                         Text="{Binding Settings.VideoReadyTimeoutMilliseconds, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="6,3" />
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupPlayniteLaunch}" Margin="0,0,0,12">
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="270" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelPlayniteExecutable}"
+                                           VerticalAlignment="Center" Margin="0,4"
+                                           ToolTip="{DynamicResource LOCPlayniteBootTipPlayniteExecutable}" />
+                                <TextBox Grid.Row="0" Grid.Column="1"
+                                         Text="{Binding Settings.PlayniteExecutable, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="{DynamicResource LOCPlayniteBootTipPlayniteExecutable}" Margin="6,3" />
+
+                                <TextBlock Grid.Row="1" Text="{DynamicResource LOCPlayniteBootLabelLaunchArguments}"
+                                           VerticalAlignment="Center" Margin="0,4" />
+                                <TextBox Grid.Row="1" Grid.Column="1"
+                                         Text="{Binding Settings.LaunchArguments, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="6,3" />
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupExternalManualLaunch}" Margin="0,0,0,12">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="{DynamicResource LOCPlayniteBootAdvancedManualDescription}"
+                                           TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,8" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding DirectCommand, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" />
+                                    <Button Grid.Column="1" Content="{DynamicResource LOCPlayniteBootButtonCopy}"
+                                            Command="{Binding CopyDirectCommand}" Margin="8,0,0,0" Padding="12,4" />
+                                </Grid>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <Button Content="{DynamicResource LOCPlayniteBootButtonResetSettings}"
+                                Command="{Binding ResetSettingsCommand}" HorizontalAlignment="Left" Padding="12,4" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="{DynamicResource LOCPlayniteBootTabDiagnostics}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="{DynamicResource LOCPlayniteBootIntroDiagnostics}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12" />
+
                         <GroupBox Header="{DynamicResource LOCPlayniteBootGroupRuntimeStatus}" Margin="0,0,0,12">
                             <StackPanel Margin="10">
                                 <TextBlock Text="{Binding RuntimeStatus, Mode=OneWay}" TextWrapping="Wrap"
@@ -373,49 +600,6 @@
                                             Command="{Binding RepairRuntimeCommand}" Margin="0,0,8,8" Padding="12,4" />
                                 </WrapPanel>
                             </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupShortcuts}" Margin="0,0,0,12">
-                            <Grid Margin="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150" />
-                                    <ColumnDefinition Width="180" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <TextBlock Grid.Row="0" Text="{DynamicResource LOCPlayniteBootLabelShortcutName}"
-                                           VerticalAlignment="Center" Margin="0,4" />
-                                <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
-                                         Text="{Binding Settings.ShortcutName, UpdateSourceTrigger=PropertyChanged}"
-                                         Margin="6,3,0,8" />
-
-                                <TextBlock Grid.Row="1" Text="{DynamicResource LOCPlayniteBootShortcutDesktop}"
-                                           VerticalAlignment="Center" Margin="0,6" />
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DesktopShortcutStatus}"
-                                           VerticalAlignment="Center" Margin="6" />
-                                <WrapPanel Grid.Row="1" Grid.Column="2" Margin="6,2,0,2">
-                                    <Button Content="{DynamicResource LOCPlayniteBootButtonCreateOrUpdateShortcut}"
-                                            Command="{Binding CreateDesktopShortcutCommand}" Margin="0,0,8,6" Padding="12,4" />
-                                    <Button Content="{DynamicResource LOCPlayniteBootButtonRemoveShortcut}"
-                                            Command="{Binding RemoveDesktopShortcutCommand}" Margin="0,0,8,6" Padding="12,4" />
-                                </WrapPanel>
-
-                                <TextBlock Grid.Row="2" Text="{DynamicResource LOCPlayniteBootShortcutStartMenu}"
-                                           VerticalAlignment="Center" Margin="0,6" />
-                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding StartMenuShortcutStatus}"
-                                           VerticalAlignment="Center" Margin="6" />
-                                <WrapPanel Grid.Row="2" Grid.Column="2" Margin="6,2,0,2">
-                                    <Button Content="{DynamicResource LOCPlayniteBootButtonCreateOrUpdateShortcut}"
-                                            Command="{Binding CreateStartMenuShortcutCommand}" Margin="0,0,8,6" Padding="12,4" />
-                                    <Button Content="{DynamicResource LOCPlayniteBootButtonRemoveShortcut}"
-                                            Command="{Binding RemoveStartMenuShortcutCommand}" Margin="0,0,8,6" Padding="12,4" />
-                                </WrapPanel>
-                            </Grid>
                         </GroupBox>
 
                         <GroupBox Header="{DynamicResource LOCPlayniteBootGroupDiagnostics}" Margin="0,0,0,12">
@@ -450,23 +634,32 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <Expander Header="{DynamicResource LOCPlayniteBootExpanderInstallationAdvanced}" IsExpanded="False">
-                            <Border Padding="10" Margin="0,6,0,0">
-                                <StackPanel>
-                                    <TextBlock Text="{DynamicResource LOCPlayniteBootLabelDirectCommand}"
-                                               FontWeight="SemiBold" Margin="0,0,0,4" />
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox Text="{Binding DirectCommand, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" />
-                                        <Button Grid.Column="1" Content="{DynamicResource LOCPlayniteBootButtonCopy}"
-                                                Command="{Binding CopyDirectCommand}" Margin="8,0,0,0" Padding="12,4" />
-                                    </Grid>
+                        <GroupBox Header="{DynamicResource LOCPlayniteBootGroupShortcutState}" Margin="0,0,0,12">
+                            <StackPanel Margin="10">
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Style="{StaticResource PbsStatusDotStyle}"
+                                             Tag="{Binding IsDesktopShortcutInstalled}" />
+                                    <TextBlock Text="{Binding DesktopLaunchMethodStatus}" VerticalAlignment="Center" />
                                 </StackPanel>
-                            </Border>
-                        </Expander>
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Style="{StaticResource PbsStatusDotStyle}"
+                                             Tag="{Binding IsStartMenuShortcutInstalled}" />
+                                    <TextBlock Text="{Binding StartMenuLaunchMethodStatus}" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Style="{StaticResource PbsStatusDotStyle}"
+                                             Tag="{Binding IsDesktopFullscreenLaunchEnabled}" />
+                                    <TextBlock Text="{Binding DesktopFullscreenLaunchMethodStatus}" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Style="{StaticResource PbsStatusDotStyle}"
+                                             Tag="{Binding IsStreamingPreloadEnabled}" />
+                                    <TextBlock Text="{Binding StreamingPreloadStatus}" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayniteBootDiagnosticsShortcutDescription}"
+                                           TextWrapping="Wrap" Opacity="0.72" Margin="0,8,0,0" />
+                            </StackPanel>
+                        </GroupBox>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

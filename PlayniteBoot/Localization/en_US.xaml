@@ -126,8 +126,8 @@
     <sys:String x:Key="LOCPlayniteBootStatusRuntimeMissing">Runtime is not ready yet. Use Repair runtime if automatic synchronization does not complete.</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusConfigurationValid">Valid</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusConfigurationNeedsRepair">Needs repair</sys:String>
-    <sys:String x:Key="LOCPlayniteBootStatusInstalled">● Installed</sys:String>
-    <sys:String x:Key="LOCPlayniteBootStatusNotInstalled">○ Not installed</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusInstalled">Installed</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusNotInstalled">Not installed</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusUnknown">Status unavailable</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusShortcutCreated">Shortcut “{0}” created or updated in {1}.</sys:String>
     <sys:String x:Key="LOCPlayniteBootStatusShortcutRemoved">Shortcut removed from {0}.</sys:String>
@@ -161,6 +161,66 @@
     <sys:String x:Key="LOCPlayniteBootErrorShortcutInstallerMissing">The shortcut installer was not found.</sys:String>
     <sys:String x:Key="LOCPlayniteBootErrorShortcutProcess">PowerShell could not be started to create the shortcut.</sys:String>
     <sys:String x:Key="LOCPlayniteBootErrorShortcutTimeout">The shortcut operation timed out.</sys:String>
-    <sys:String x:Key="LOCPlayniteBootShortcutDescription">Launch Playnite Fullscreen with a custom boot video and no console window.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutDescription">Launch Playnite Fullscreen through Playnite Boot Screen with the configured boot video.</sys:String>
     <sys:String x:Key="LOCPlayniteBootVideoFileFilterLabel">Video files</sys:String>
+
+    <!-- 0.8.1 setup-first UI -->
+    <sys:String x:Key="LOCPlayniteBootTabSetup">Quick Setup</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTabPlayback">Playback</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTabAdvanced">Advanced</sys:String>
+    <sys:String x:Key="LOCPlayniteBootTabDiagnostics">Diagnostics</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootIntroSetup">Set up your custom Playnite startup in just a few steps. PBS shows a boot video while Playnite Fullscreen is opening.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroPlayback">Adjust where and how the boot video is displayed. These settings apply to every PBS launch method.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroAdvanced">Advanced readiness and launch settings. The defaults are recommended for most setups.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootIntroDiagnostics">Runtime maintenance, logging and diagnostic information.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootGroupLaunchMethods">1. Start Playnite with PBS</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupBootVideo">2. Choose your boot video</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupVideoEndBehavior">3. Choose when Playnite appears</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupPbsShortcuts">PBS shortcuts</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupDesktopFullscreen">Desktop → Fullscreen</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupDisplay">Display</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupReadiness">Readiness detection</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupPlayniteLaunch">Playnite launch</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupExternalManualLaunch">External / manual launch</sys:String>
+    <sys:String x:Key="LOCPlayniteBootGroupShortcutState">Launch method state</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootSetupShortcutsDescription">Create a shortcut that starts PBS before Playnite Fullscreen.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupRegularLauncherWarning">Playnite's normal Fullscreen startup remains unchanged and does not show the boot screen.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupUsageDescription">Choose how to start PBS, select your video, and decide when Playnite should appear.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupLaunchMethodsDescription">Choose when Playnite Boot Screen should be shown.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupVideoDescription">Choose the video shown while Playnite is starting. Accepted formats: {0}.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootQuickSetupCompleteTitle">Ready</sys:String>
+    <sys:String x:Key="LOCPlayniteBootQuickSetupCompleteDescription">Playnite Boot Screen is ready to use.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootQuickSetupIncompleteTitle">Setup needed</sys:String>
+    <sys:String x:Key="LOCPlayniteBootQuickSetupIncompleteDescription">Create a PBS shortcut or enable Desktop → Fullscreen.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupDesktopShortcutEnabled">Desktop PBS shortcut installed</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupDesktopShortcutDisabled">Desktop PBS shortcut not installed</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupStartMenuShortcutEnabled">Start menu PBS shortcut installed</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupStartMenuShortcutDisabled">Start menu PBS shortcut not installed</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupDesktopFullscreenEnabled">Desktop to Fullscreen integration enabled</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupDesktopFullscreenDisabled">Desktop to Fullscreen integration disabled</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupStreamingPreloadEnabled">Streaming preload support enabled</sys:String>
+    <sys:String x:Key="LOCPlayniteBootSetupStreamingPreloadDisabled">Streaming preload support disabled</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootLabelShortcutIcon">Shortcut icon</sys:String>
+    <sys:String x:Key="LOCPlayniteBootLabelCustomShortcutIcon">Custom .ico</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutIconPbs">Playnite Boot Screen</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutIconPlaynite">Playnite Fullscreen</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutIconCustom">Custom (.ico)</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutCustomIconNone">No .ico file selected.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutCustomIconSelected">Custom icon selected.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootShortcutIconFileFilter">Icon files (*.ico)|*.ico</sys:String>
+    <sys:String x:Key="LOCPlayniteBootButtonChooseShortcutIcon">Choose .ico...</sys:String>
+    <sys:String x:Key="LOCPlayniteBootStatusCustomShortcutIconSelected">Custom shortcut icon copied to the PBS data folder.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootAdvancedManualDescription">Other launchers can invoke PBS directly with this command. Launchers that start Playnite.FullscreenApp.exe themselves bypass PBS unless they explicitly integrate this command.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootDiagnosticsShortcutDescription">Shortcut state is detected from PBS-managed shortcuts. External launcher configuration is not inspected.</sys:String>
+
+    <sys:String x:Key="LOCPlayniteBootValidationShortcutIconMode">The selected shortcut icon mode is not valid.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationCustomShortcutIconMissing">Choose a custom .ico file or select another shortcut icon.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationCustomShortcutIconFormat">Custom shortcut icons must use the .ico format.</sys:String>
+    <sys:String x:Key="LOCPlayniteBootValidationShortcutIconFileMissing">The shortcut icon file does not exist: {0}</sys:String>
+
 </ResourceDictionary>

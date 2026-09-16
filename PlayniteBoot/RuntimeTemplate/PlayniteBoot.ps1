@@ -1002,6 +1002,7 @@ try {
 
     Add-Type @"
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -1216,6 +1217,33 @@ public static class PlayniteBootNative
 
     [DllImport("user32.dll")]
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    public static IntPtr[] GetTopLevelWindowsForProcess(int processId)
+    {
+        List<IntPtr> windows = new List<IntPtr>();
+
+        EnumWindows(delegate(IntPtr hWnd, IntPtr lParam)
+        {
+            uint ownerProcessId;
+            GetWindowThreadProcessId(hWnd, out ownerProcessId);
+            if (ownerProcessId == (uint)processId)
+            {
+                windows.Add(hWnd);
+            }
+
+            return true;
+        }, IntPtr.Zero);
+
+        return windows.ToArray();
+    }
 }
 "@
 
@@ -1226,6 +1254,7 @@ public static class PlayniteBootNative
     # least 85% of the monitor it actually occupies. The monitor is selected by
     # the largest intersection area, independently from the boot overlay.
     $minimumPlayniteMonitorCoverage = 0.85
+    $switchTopologyRefreshIntervalMilliseconds = 250
 
     function Test-PlayniteWindowReady {
         param(
@@ -1245,64 +1274,102 @@ public static class PlayniteBootNative
             }
 
             $Process.Refresh()
-            $windowHandle = $Process.MainWindowHandle
-            if ($windowHandle -eq [IntPtr]::Zero) {
-                return $null
-            }
+            $processId = [int]$Process.Id
+            $mainWindowHandle = [IntPtr]$Process.MainWindowHandle
 
-            if (-not [PlayniteBootNative]::IsWindowVisible($windowHandle)) {
-                return $null
-            }
+            $testWindowHandle = {
+                param(
+                    [IntPtr]$WindowHandle,
+                    [string]$Source
+                )
 
-            $windowRectangle = New-Object PlayniteBootNative+RECT
-            if (-not [PlayniteBootNative]::GetWindowRect($windowHandle, [ref]$windowRectangle)) {
-                return $null
-            }
+                if ($WindowHandle -eq [IntPtr]::Zero -or
+                    -not [PlayniteBootNative]::IsWindowVisible($WindowHandle)) {
+                    return $null
+                }
 
-            $windowWidth = $windowRectangle.Right - $windowRectangle.Left
-            $windowHeight = $windowRectangle.Bottom - $windowRectangle.Top
-            if ($windowWidth -lt 200 -or $windowHeight -lt 120) {
-                return $null
-            }
+                $windowRectangle = New-Object PlayniteBootNative+RECT
+                if (-not [PlayniteBootNative]::GetWindowRect($WindowHandle, [ref]$windowRectangle)) {
+                    return $null
+                }
 
-            $bestScreen = $null
-            $bestIntersectionArea = 0.0
-            foreach ($screen in @($AvailableScreens)) {
-                $bounds = $screen.Bounds
-                $intersectionLeft = [Math]::Max($windowRectangle.Left, $bounds.Left)
-                $intersectionTop = [Math]::Max($windowRectangle.Top, $bounds.Top)
-                $intersectionRight = [Math]::Min($windowRectangle.Right, $bounds.Right)
-                $intersectionBottom = [Math]::Min($windowRectangle.Bottom, $bounds.Bottom)
+                $windowWidth = $windowRectangle.Right - $windowRectangle.Left
+                $windowHeight = $windowRectangle.Bottom - $windowRectangle.Top
+                if ($windowWidth -lt 200 -or $windowHeight -lt 120) {
+                    return $null
+                }
 
-                $intersectionWidth = [Math]::Max(0, $intersectionRight - $intersectionLeft)
-                $intersectionHeight = [Math]::Max(0, $intersectionBottom - $intersectionTop)
-                $intersectionArea = [double]$intersectionWidth * [double]$intersectionHeight
+                $bestScreen = $null
+                $bestIntersectionArea = 0.0
+                foreach ($screen in @($AvailableScreens)) {
+                    $bounds = $screen.Bounds
+                    $intersectionLeft = [Math]::Max($windowRectangle.Left, $bounds.Left)
+                    $intersectionTop = [Math]::Max($windowRectangle.Top, $bounds.Top)
+                    $intersectionRight = [Math]::Min($windowRectangle.Right, $bounds.Right)
+                    $intersectionBottom = [Math]::Min($windowRectangle.Bottom, $bounds.Bottom)
 
-                if ($intersectionArea -gt $bestIntersectionArea) {
-                    $bestIntersectionArea = $intersectionArea
-                    $bestScreen = $screen
+                    $intersectionWidth = [Math]::Max(0, $intersectionRight - $intersectionLeft)
+                    $intersectionHeight = [Math]::Max(0, $intersectionBottom - $intersectionTop)
+                    $intersectionArea = [double]$intersectionWidth * [double]$intersectionHeight
+
+                    if ($intersectionArea -gt $bestIntersectionArea) {
+                        $bestIntersectionArea = $intersectionArea
+                        $bestScreen = $screen
+                    }
+                }
+
+                if ($null -eq $bestScreen) {
+                    return $null
+                }
+
+                $monitorArea = [double]$bestScreen.Bounds.Width * [double]$bestScreen.Bounds.Height
+                if ($monitorArea -le 0) {
+                    return $null
+                }
+
+                return [PSCustomObject]@{
+                    Screen = $bestScreen
+                    Coverage = $bestIntersectionArea / $monitorArea
+                    WindowHandle = $WindowHandle
+                    Source = $Source
                 }
             }
 
-            if ($null -eq $bestScreen) {
+            # Preserve the 0.8.0 behavior whenever MainWindowHandle is already a
+            # valid Fullscreen candidate. Enumeration is only a fallback for the
+            # transition cases where MainWindowHandle still points to a splash or
+            # another transient Playnite window.
+            if ($mainWindowHandle -ne [IntPtr]::Zero) {
+                $mainCandidate = & $testWindowHandle -WindowHandle $mainWindowHandle -Source 'main'
+                if ($null -ne $mainCandidate -and $mainCandidate.Coverage -ge $MinimumCoverage) {
+                    return $mainCandidate
+                }
+            }
+
+            $bestCandidate = $null
+            foreach ($windowHandle in @([PlayniteBootNative]::GetTopLevelWindowsForProcess($processId))) {
+                if ($windowHandle -eq [IntPtr]::Zero -or $windowHandle -eq $mainWindowHandle) {
+                    continue
+                }
+
+                # GetTopLevelWindowsForProcess filters EnumWindows by the exact
+                # tracked Playnite Fullscreen PID, so unrelated applications can
+                # never become readiness candidates.
+                $candidate = & $testWindowHandle -WindowHandle $windowHandle -Source 'enumerated'
+                if ($null -eq $candidate) {
+                    continue
+                }
+
+                if ($null -eq $bestCandidate -or $candidate.Coverage -gt $bestCandidate.Coverage) {
+                    $bestCandidate = $candidate
+                }
+            }
+
+            if ($null -eq $bestCandidate -or $bestCandidate.Coverage -lt $MinimumCoverage) {
                 return $null
             }
 
-            $monitorArea = [double]$bestScreen.Bounds.Width * [double]$bestScreen.Bounds.Height
-            if ($monitorArea -le 0) {
-                return $null
-            }
-
-            $coverage = $bestIntersectionArea / $monitorArea
-            if ($coverage -lt $MinimumCoverage) {
-                return $null
-            }
-
-            return [PSCustomObject]@{
-                Screen = $bestScreen
-                Coverage = $coverage
-                WindowHandle = $windowHandle
-            }
+            return $bestCandidate
         }
         catch {
             return $null
@@ -1315,7 +1382,10 @@ public static class PlayniteBootNative
             $Process,
 
             [Parameter(Mandatory = $false)]
-            [string]$Phase = ''
+            [string]$Phase = '',
+
+            [Parameter(Mandatory = $false)]
+            [IntPtr]$WindowHandle = [IntPtr]::Zero
         )
 
         if ($null -eq $Process) {
@@ -1327,13 +1397,20 @@ public static class PlayniteBootNative
                 return
             }
 
-            $Process.Refresh()
-            $windowHandle = $Process.MainWindowHandle
-            if ($windowHandle -ne [IntPtr]::Zero) {
+            $windowHandleToActivate = $WindowHandle
+            if ($windowHandleToActivate -eq [IntPtr]::Zero -or
+                -not [PlayniteBootNative]::IsWindowVisible($windowHandleToActivate)) {
+                $Process.Refresh()
+                $windowHandleToActivate = [IntPtr]$Process.MainWindowHandle
+            }
+
+            if ($windowHandleToActivate -ne [IntPtr]::Zero) {
                 # SW_RESTORE = 9. Ripristiniamo la finestra prima di chiedere il
-                # foreground, come nella baseline originale.
-                $showResult = [PlayniteBootNative]::ShowWindowAsync($windowHandle, 9)
-                $foregroundResult = [PlayniteBootNative]::SetForegroundWindow($windowHandle)
+                # foreground, come nella baseline originale. Quando la readiness
+                # ha trovato una top-level window diversa da MainWindowHandle,
+                # riutilizziamo esattamente quella finestra per l'handoff.
+                $showResult = [PlayniteBootNative]::ShowWindowAsync($windowHandleToActivate, 9)
+                $foregroundResult = [PlayniteBootNative]::SetForegroundWindow($windowHandleToActivate)
 
                 if (-not [string]::IsNullOrWhiteSpace($Phase)) {
                     Write-Log "Foreground handoff [$Phase] for Playnite Fullscreen PID $($Process.Id): ShowWindowAsync=$showResult; SetForegroundWindow=$foregroundResult."
@@ -1534,6 +1611,34 @@ public static class PlayniteBootNative
         }
     }
 
+    function Get-ScreenTopologySignature {
+        param(
+            [Parameter(Mandatory = $true)]
+            $AvailableScreens
+        )
+
+        $parts = @($AvailableScreens | ForEach-Object {
+            $bounds = $_.Bounds
+            "{0}|{1},{2},{3},{4}|primary={5}" -f $_.DeviceName, $bounds.X, $bounds.Y, $bounds.Width, $bounds.Height, [bool]$_.Primary
+        } | Sort-Object)
+
+        return ($parts -join ';')
+    }
+
+    function Get-ScreenTopologyDescription {
+        param(
+            [Parameter(Mandatory = $true)]
+            $AvailableScreens
+        )
+
+        $parts = @($AvailableScreens | ForEach-Object {
+            $bounds = $_.Bounds
+            "{0} {1}x{2} at {3},{4}{5}" -f $_.DeviceName, $bounds.Width, $bounds.Height, $bounds.X, $bounds.Y, $(if ($_.Primary) { ' primary' } else { '' })
+        } | Sort-Object)
+
+        return ($parts -join '; ')
+    }
+
     $screens = @([System.Windows.Forms.Screen]::AllScreens)
     if ($screens.Count -eq 0) {
         throw 'No monitors were detected.'
@@ -1629,6 +1734,12 @@ public static class PlayniteBootNative
         ReadySince = $null
         ReadyProcessId = $null
         ReadyWindowHandle = [IntPtr]::Zero
+        ScreenTopologySignature = $(if ($Mode -eq 'Switch') { Get-ScreenTopologySignature -AvailableScreens $screens } else { $null })
+        ScreenTopologyCount = $(if ($Mode -eq 'Switch') { $screens.Count } else { 0 })
+        ScreenTopologyRefreshWarningLogged = $false
+        ReadinessScreens = $screens
+        ScreenTopologyRefreshWatch = [Diagnostics.Stopwatch]::StartNew()
+        LastScreenTopologyRefreshMilliseconds = -$switchTopologyRefreshIntervalMilliseconds
         StartWatch = [Diagnostics.Stopwatch]::new()
         PreloadWatch = [Diagnostics.Stopwatch]::new()
         Closing = $false
@@ -1659,6 +1770,10 @@ public static class PlayniteBootNative
         LaunchStarted = $false
         StreamingInitialProcessId = $null
         StreamingPidRolloverLogged = $false
+    }
+
+    if ($Mode -eq 'Switch') {
+        Write-Log "Switch readiness display topology initialized with $($screens.Count) active display(s): $(Get-ScreenTopologyDescription -AvailableScreens $screens)."
     }
 
     $uninstallAltF4Hook = {
@@ -1933,7 +2048,26 @@ public static class PlayniteBootNative
     $media.Add_MediaFailed({
         param($sender, $eventArgs)
         $state.VideoFailed = $true
-        Write-Log "Video playback failed: $($eventArgs.ErrorException.Message). Using the Playnite-readiness fallback." 'WARN'
+
+        # A decoder/device failure can leave the last MediaElement surface
+        # frozen on screen, especially while Windows is changing display
+        # topology. Do not retry here: hide the failed surface immediately and
+        # keep the black overlay while readiness continues to track Playnite.
+        try {
+            $media.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $null)
+            $media.Opacity = 0.0
+            $media.Visibility = [System.Windows.Visibility]::Hidden
+        }
+        catch {
+        }
+
+        try {
+            $media.Stop()
+        }
+        catch {
+        }
+
+        Write-Log "Video playback failed: $($eventArgs.ErrorException.Message). The failed video surface was hidden; using the Playnite-readiness fallback." 'WARN'
     })
 
     $closeImmediately = {
@@ -2170,7 +2304,7 @@ public static class PlayniteBootNative
         }
 
         if (-not $state.UserYieldedForeground) {
-            Activate-PlayniteWindow -Process $candidateProcess -Phase 'pre-fade'
+            Activate-PlayniteWindow -Process $candidateProcess -Phase 'pre-fade' -WindowHandle $state.ReadyWindowHandle
         }
 
         if ($settings.FadeOutMilliseconds -le 0) {
@@ -2240,6 +2374,7 @@ public static class PlayniteBootNative
         # La timeline visibile parte soltanto dopo Continue.
         $hostWaitingAfterPreload = $Mode -eq 'Host' -and -not $state.LaunchStarted -and $state.PreloadPrepared
         if ($videoExists -and
+            -not $state.VideoFailed -and
             -not $state.VideoRevealed -and
             -not $state.VideoEnded -and
             -not $hostWaitingAfterPreload) {
@@ -2344,9 +2479,54 @@ public static class PlayniteBootNative
             }
         }
 
+        $readinessScreens = $screens
+        if ($Mode -eq 'Switch' -and $null -ne $candidateProcess) {
+            $readinessScreens = $state.ReadinessScreens
+            $topologyRefreshElapsedMilliseconds = $state.ScreenTopologyRefreshWatch.ElapsedMilliseconds
+            if (($topologyRefreshElapsedMilliseconds - $state.LastScreenTopologyRefreshMilliseconds) -ge $switchTopologyRefreshIntervalMilliseconds) {
+                $state.LastScreenTopologyRefreshMilliseconds = $topologyRefreshElapsedMilliseconds
+
+                try {
+                    $currentScreens = @([System.Windows.Forms.Screen]::AllScreens)
+                    if ($currentScreens.Count -gt 0) {
+                        $currentTopologySignature = Get-ScreenTopologySignature -AvailableScreens $currentScreens
+                        if ($currentTopologySignature -ne $state.ScreenTopologySignature) {
+                            $previousTopologyCount = $state.ScreenTopologyCount
+                            $state.ScreenTopologySignature = $currentTopologySignature
+                            $state.ScreenTopologyCount = $currentScreens.Count
+
+                            # A candidate cannot accumulate stability time across two
+                            # different Windows display topologies. This matters for
+                            # setups that switch from Extend to Second screen only
+                            # while Playnite Fullscreen is starting.
+                            $state.ReadySince = $null
+                            $state.ReadyProcessId = $null
+                            $state.ReadyWindowHandle = [IntPtr]::Zero
+
+                            Write-Log "Display topology changed during Switch readiness: ${previousTopologyCount} -> $($currentScreens.Count) active display(s). Current topology: $(Get-ScreenTopologyDescription -AvailableScreens $currentScreens)." 'WARN'
+                        }
+
+                        $state.ReadinessScreens = $currentScreens
+                        $readinessScreens = $currentScreens
+                        $state.ScreenTopologyRefreshWarningLogged = $false
+                    }
+                    elseif (-not $state.ScreenTopologyRefreshWarningLogged) {
+                        $state.ScreenTopologyRefreshWarningLogged = $true
+                        Write-Log 'Windows temporarily reported no active displays during Switch readiness. Keeping the last valid display snapshot.' 'WARN'
+                    }
+                }
+                catch {
+                    if (-not $state.ScreenTopologyRefreshWarningLogged) {
+                        $state.ScreenTopologyRefreshWarningLogged = $true
+                        Write-Log "Could not refresh the Windows display topology during Switch readiness: $($_.Exception.Message). Keeping the last valid display snapshot." 'WARN'
+                    }
+                }
+            }
+        }
+
         $windowReadiness = $null
         if ($null -ne $candidateProcess) {
-            $windowReadiness = Test-PlayniteWindowReady -Process $candidateProcess -AvailableScreens $screens -MinimumCoverage $minimumPlayniteMonitorCoverage
+            $windowReadiness = Test-PlayniteWindowReady -Process $candidateProcess -AvailableScreens $readinessScreens -MinimumCoverage $minimumPlayniteMonitorCoverage
         }
         $windowIsReady = $null -ne $windowReadiness
 
@@ -2355,9 +2535,8 @@ public static class PlayniteBootNative
 
         if ($windowIsReady) {
             try {
-                $candidateProcess.Refresh()
                 $candidateProcessId = [int]$candidateProcess.Id
-                $candidateWindowHandle = [IntPtr]$candidateProcess.MainWindowHandle
+                $candidateWindowHandle = [IntPtr]$windowReadiness.WindowHandle
 
                 if ($candidateWindowHandle -eq [IntPtr]::Zero) {
                     $windowIsReady = $false
@@ -2382,7 +2561,8 @@ public static class PlayniteBootNative
                     $state.ReadyWindowHandle = $candidateWindowHandle
                     $coveragePercent = [Math]::Round($windowReadiness.Coverage * 100.0, 1)
                     $playniteScreenName = $windowReadiness.Screen.DeviceName
-                    Write-Log "Fullscreen window detected for PID ${candidateProcessId} on ${playniteScreenName}: monitor coverage is ${coveragePercent}%."
+                    $readinessSource = [string]$windowReadiness.Source
+                    Write-Log "Fullscreen window detected for PID ${candidateProcessId} on ${playniteScreenName}: monitor coverage is ${coveragePercent}% (window source: ${readinessSource})."
                     if ($playniteScreenName -ne $selectedScreen.DeviceName) {
                         Write-Log "Playnite Fullscreen is on ${playniteScreenName} while the boot overlay is on $($selectedScreen.DeviceName). The overlay will close normally." 'WARN'
                     }
@@ -2508,7 +2688,7 @@ public static class PlayniteBootNative
     if ($state.WindowWasReady -and
         -not $state.UserYieldedForeground -and
         -not $state.BootCancelled) {
-        Activate-PlayniteWindow -Process $trackedProcess -Phase 'post-overlay'
+        Activate-PlayniteWindow -Process $trackedProcess -Phase 'post-overlay' -WindowHandle $state.ReadyWindowHandle
     }
 
     if ($state.BootCancelled) {

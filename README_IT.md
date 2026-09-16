@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/fc1d7d9a-7a05-4b44-a43e-959a9b4a4fad
 - Possibilità di mostrare Playnite appena pronto, attendere la fine del video oppure ripeterlo in loop finché Playnite non è pronto.
 - Copertura della transizione integrata Desktop → Fullscreen con il video configurato, attiva di default e disattivabile dalle impostazioni.
 - Runtime gestito fuori dalla directory sostituita durante gli aggiornamenti dell'estensione.
-- Nome personalizzabile per i collegamenti Desktop e menu Start.
+- Nome e icona personalizzabili per i collegamenti Desktop e menu Start: Playnite Boot Screen, Playnite Fullscreen oppure un file `.ico` personalizzato.
 - Comandi Preload e Continue nella schermata Streaming.
 - Marker runtime pubblico per temi/helper che devono evitare intro di avvio duplicate.
 - Interfaccia in inglese e italiano.
@@ -48,10 +48,10 @@ Per una build di sviluppo, chiudi Playnite ed esegui:
 
 ## Avvio diretto
 
-In **Installazione e diagnostica**:
+In **Configurazione rapida**:
 
-1. scegli il nome del collegamento;
-2. seleziona **Crea/aggiorna collegamento Desktop** oppure **Crea/aggiorna collegamento Start**;
+1. scegli nome e icona del collegamento;
+2. seleziona **Crea/aggiorna** per il collegamento Desktop o menu Start;
 3. chiudi completamente Playnite;
 4. avvia il nuovo collegamento.
 
@@ -90,6 +90,7 @@ I file persistenti vengono salvati nella directory dati dell’estensione:
 │   ├── cache\
 │   │   └── video-compat\
 │   └── logs\
+├── shortcut-icons\
 └── shortcut-state.json
 ```
 

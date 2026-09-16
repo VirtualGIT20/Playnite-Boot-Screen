@@ -1,4 +1,4 @@
-# Release checklist — 0.8.0
+# Release checklist — 0.8.1
 
 ## Code and behavior
 
@@ -26,12 +26,18 @@
 - [ ] Follow Playnite selects Playnite's configured secondary display when primary-display mode is disabled.
 - [ ] Missing, invalid, or stale Playnite display settings fall back without stopping the launcher.
 - [ ] Playnite readiness is detected when the overlay and Playnite Fullscreen are on different monitors.
+- [ ] During Desktop → Fullscreen, changing Windows from an extended topology to a single active display is detected without the 45-second readiness timeout.
+- [ ] If `MainWindowHandle` is not the valid Fullscreen window, the exact-PID top-level window fallback can complete readiness and foreground handoff.
+- [ ] A `MediaFailed` event hides the failed video surface and falls back to a black overlay while readiness continues.
 - [ ] The standard video folder list refreshes, ignores subfolders, and keeps external video paths supported.
 - [ ] Standard-folder videos are written to `config.json` as relative `.\media\...` paths.
 - [ ] Desktop and Start shortcuts can be created, renamed, and removed.
+- [ ] PBS-managed shortcuts can use the PBS icon, Playnite Fullscreen icon, and a custom `.ico`; custom icons persist from the extension data folder.
+- [ ] Upgrading 0.8.0 preserves the Playnite Fullscreen shortcut icon choice, while a fresh 0.8.1 profile defaults to the PBS icon.
+- [ ] Quick Setup reports Ready when a PBS shortcut exists or Desktop → Fullscreen is enabled, and Setup needed otherwise.
 - [ ] Invalid or modified shortcut state cannot escape the Desktop or Start menu directories.
 - [ ] Runtime log rotates to `PlayniteBoot.log.1` after 2 MiB.
-- [ ] With `VERSION.txt` unchanged at `1.0.9`, modifying a managed installed runtime file is repaired automatically on the next Playnite start.
+- [ ] With `VERSION.txt` unchanged at `1.0.13`, modifying a managed installed runtime file is repaired automatically on the next Playnite start.
 
 ## Display matrix
 
@@ -44,9 +50,10 @@
 
 ## Packaging
 
-- [ ] `scripts/verify-release.ps1 -Version 0.8.0` succeeds.
+- [ ] `scripts/verify-release.ps1 -Version 0.8.1` succeeds.
 - [ ] `scripts/pack.ps1 -Configuration Release` creates exactly one expected `.pext`.
 - [ ] Build output and `.pext` both contain `RuntimeTemplate\SwitchBootstrap.ps1`.
+- [ ] Build output and `.pext` both contain `RuntimeTemplate\PlayniteBoot.ico`.
 - [ ] Build output and `.pext` both contain `RuntimeTemplate\media\Aniki_Remake_Intro.mp4`.
 - [ ] Build and package contain no `.pdb`, source, temporary, or stale files.
 - [ ] SHA-256 file matches the package.
@@ -59,12 +66,12 @@
 - [ ] Repository description, topics, and license are set.
 - [ ] Private vulnerability reporting is enabled.
 - [ ] CI workflow succeeds.
-- [ ] Tag `v0.8.0` creates a release with `.pext` and checksum.
-- [ ] Release notes highlight the playback model, WebM compatibility, streaming preload improvements, and Aniki ReMake integration.
+- [ ] Tag `v0.8.1` creates a release with `.pext` and checksum.
+- [ ] Release notes highlight Quick Setup, shortcut icon choices, topology-aware Switch readiness, and the MediaFailed fallback.
 
 ## Playnite add-on database
 
 - [ ] GitHub release asset URL is live.
 - [ ] `distribution/installer.yaml` verifies with Toolbox.
 - [ ] `distribution/addon.yaml` verifies with Toolbox.
-- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.8.0`; no database pull request is needed unless central metadata changes.
+- [ ] Published store entry resolves `distribution/installer.yaml` and exposes version `0.8.1`; no database pull request is needed unless central metadata changes.
