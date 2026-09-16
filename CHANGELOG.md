@@ -4,6 +4,31 @@ All notable changes are documented here. Versions follow the Playnite extension 
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-16
+
+### Added
+
+- Shortcut icon selection for PBS-managed Desktop and Start menu shortcuts: Playnite Boot Screen, Playnite Fullscreen, or a persistent custom `.ico` file.
+- A guided Quick Setup page that groups launch methods, boot-video selection, and Playnite reveal behavior with a compact readiness indicator.
+
+### Changed
+
+- Settings are organized into Quick Setup, Playback, Streaming, Advanced, and Diagnostics tabs.
+- Fresh installations use the Playnite Boot Screen shortcut icon by default; upgrades from 0.8.0 keep the existing Playnite Fullscreen icon choice.
+- Runtime updated to 1.0.13.
+
+### Fixed
+
+- Desktop-to-Fullscreen readiness now refreshes the active Windows display topology while Playnite is starting, fixing transitions such as Extended desktop to a single TV/display.
+- Fullscreen readiness keeps `MainWindowHandle` as the primary path and falls back to visible top-level windows owned by the exact Playnite Fullscreen PID when the main handle is still transient.
+- Foreground handoff reuses the window handle that actually satisfied readiness detection.
+- A media-device/decoder failure now hides the failed video surface and continues with the Playnite-readiness fallback instead of leaving a frozen frame visible.
+
+### Compatibility
+
+- Existing settings, shortcuts, custom media, and streaming configuration are migrated automatically.
+- Manual PBS monitor selection remains an explicit overlay-placement option; dynamic topology refresh affects Switch readiness only.
+
 ## [0.8.0] - 2026-09-14
 
 ### Added

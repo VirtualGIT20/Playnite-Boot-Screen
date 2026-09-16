@@ -67,6 +67,7 @@ $requiredFiles = @(
     'RuntimeTemplate\Launch-PlayniteBoot.vbs',
     'RuntimeTemplate\Install-Shortcut.ps1',
     'RuntimeTemplate\Test-Configuration.ps1',
+    'RuntimeTemplate\PlayniteBoot.ico',
     'RuntimeTemplate\VERSION.txt',
     'RuntimeTemplate\media\boot-4k60.mp4',
     'RuntimeTemplate\media\Aniki_Remake_Intro.mp4'

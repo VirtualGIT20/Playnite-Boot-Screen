@@ -3,6 +3,35 @@ using System.Collections.Generic;
 
 namespace PlayniteBoot.Models
 {
+    public static class ShortcutIconModes
+    {
+        public const string Pbs = "pbs";
+        public const string Playnite = "playnite";
+        public const string Custom = "custom";
+
+        public static bool IsValid(string value)
+        {
+            return string.Equals(value, Pbs, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, Playnite, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, Custom, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string Normalize(string value)
+        {
+            if (string.Equals(value, Playnite, StringComparison.OrdinalIgnoreCase))
+            {
+                return Playnite;
+            }
+
+            if (string.Equals(value, Custom, StringComparison.OrdinalIgnoreCase))
+            {
+                return Custom;
+            }
+
+            return Pbs;
+        }
+    }
+
     public static class VideoEndBehaviors
     {
         public const string Ready = "ready";
@@ -34,7 +63,7 @@ namespace PlayniteBoot.Models
 
     public class PlayniteBootSettingsData : ObservableObject
     {
-        public const int CurrentSettingsVersion = 5;
+        public const int CurrentSettingsVersion = 6;
 
         private int settingsVersion;
         private string playniteExecutable = "auto";
@@ -64,6 +93,9 @@ namespace PlayniteBoot.Models
         private bool enableDesktopFullscreenSwitch = true;
         private bool logEnabled = true;
         private string shortcutName = "Playnite Fullscreen";
+        private string shortcutIconMode = ShortcutIconModes.Pbs;
+        private string customShortcutIconPath = string.Empty;
+        private string customShortcutIconFileName = string.Empty;
         private StreamingSettings streaming = new StreamingSettings();
 
         public static PlayniteBootSettingsData CreateDefault()
@@ -117,6 +149,9 @@ namespace PlayniteBoot.Models
         public bool EnableDesktopFullscreenSwitch { get => enableDesktopFullscreenSwitch; set => SetValue(ref enableDesktopFullscreenSwitch, value); }
         public bool LogEnabled { get => logEnabled; set => SetValue(ref logEnabled, value); }
         public string ShortcutName { get => shortcutName; set => SetValue(ref shortcutName, value); }
+        public string ShortcutIconMode { get => shortcutIconMode; set => SetValue(ref shortcutIconMode, value); }
+        public string CustomShortcutIconPath { get => customShortcutIconPath; set => SetValue(ref customShortcutIconPath, value); }
+        public string CustomShortcutIconFileName { get => customShortcutIconFileName; set => SetValue(ref customShortcutIconFileName, value); }
         public StreamingSettings Streaming { get => streaming; set => SetValue(ref streaming, value); }
     }
 }

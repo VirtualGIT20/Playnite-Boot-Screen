@@ -17,6 +17,8 @@ namespace PlayniteBoot.Services
             ScriptPath = Path.Combine(RuntimeDirectory, "PlayniteBoot.ps1");
             ShortcutInstallerPath = Path.Combine(RuntimeDirectory, "Install-Shortcut.ps1");
             ShortcutStatePath = Path.Combine(pluginDataPath, "shortcut-state.json");
+            ShortcutIconsDirectory = Path.Combine(pluginDataPath, "shortcut-icons");
+            DefaultShortcutIconPath = Path.Combine(RuntimeDirectory, "PlayniteBoot.ico");
             DefaultTemplateVideoPath = Path.Combine(RuntimeTemplateDirectory, "media", "boot-4k60.mp4");
             DefaultVideoPath = Path.Combine(MediaDirectory, "boot-4k60.mp4");
             LogPath = Path.Combine(LogsDirectory, "PlayniteBoot.log");
@@ -33,6 +35,8 @@ namespace PlayniteBoot.Services
         public string ScriptPath { get; }
         public string ShortcutInstallerPath { get; }
         public string ShortcutStatePath { get; }
+        public string ShortcutIconsDirectory { get; }
+        public string DefaultShortcutIconPath { get; }
         public string DefaultTemplateVideoPath { get; }
         public string DefaultVideoPath { get; }
         public string LogPath { get; }

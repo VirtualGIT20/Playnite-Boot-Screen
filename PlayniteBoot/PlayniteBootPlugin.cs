@@ -124,10 +124,12 @@ namespace PlayniteBoot
                 var compatibilityResult = configWriter.Write(settings);
                 LogVideoCompatibility(compatibilityResult);
                 logger.Info($"{ProductName} runtime ready at {Paths.RuntimeDirectory}. Version {result.Version}.");
+                var iconPath = ResolveShortcutIconPath(settings);
                 return shortcutService.Create(
                     location,
                     settings.ShortcutName,
-                    "LOCPlayniteBootShortcutDescription".GetLocalized());
+                    "LOCPlayniteBootShortcutDescription".GetLocalized(),
+                    iconPath);
             }
         }
 
@@ -137,6 +139,36 @@ namespace PlayniteBoot
             {
                 return shortcutService.Remove(location, settings.ShortcutName);
             }
+        }
+
+        private string ResolveShortcutIconPath(PlayniteBootSettingsData settings)
+        {
+            var mode = ShortcutIconModes.Normalize(settings?.ShortcutIconMode);
+            if (string.Equals(mode, ShortcutIconModes.Playnite, StringComparison.OrdinalIgnoreCase))
+            {
+                // Null preserves the shortcut installer's historical behavior: it
+                // discovers Playnite.FullscreenApp.exe and uses its icon.
+                return null;
+            }
+
+            var iconPath = string.Equals(mode, ShortcutIconModes.Custom, StringComparison.OrdinalIgnoreCase)
+                ? settings?.CustomShortcutIconPath
+                : Paths.DefaultShortcutIconPath;
+
+            if (string.IsNullOrWhiteSpace(iconPath))
+            {
+                throw new InvalidOperationException("LOCPlayniteBootValidationCustomShortcutIconMissing".GetLocalized());
+            }
+
+            iconPath = Path.GetFullPath(iconPath);
+            if (!File.Exists(iconPath))
+            {
+                throw new FileNotFoundException(
+                    string.Format("LOCPlayniteBootValidationShortcutIconFileMissing".GetLocalized(), iconPath),
+                    iconPath);
+            }
+
+            return iconPath;
         }
 
         private static void LogVideoCompatibility(VideoCompatibilityResult result)

@@ -36,7 +36,7 @@ namespace PlayniteBoot.Services
             this.paths = paths;
         }
 
-        public string Create(ShortcutLocation location, string shortcutName, string description)
+        public string Create(ShortcutLocation location, string shortcutName, string description, string iconPath)
         {
             if (!File.Exists(paths.ShortcutInstallerPath))
             {
@@ -79,6 +79,11 @@ namespace PlayniteBoot.Services
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(normalizedName));
             startInfo.EnvironmentVariables["PLAYNITEBOOT_SHORTCUT_DESCRIPTION_B64"] =
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(description ?? string.Empty));
+            if (!string.IsNullOrWhiteSpace(iconPath))
+            {
+                startInfo.EnvironmentVariables["PLAYNITEBOOT_SHORTCUT_ICON_B64"] =
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(iconPath));
+            }
 
             using (var process = Process.Start(startInfo))
             {

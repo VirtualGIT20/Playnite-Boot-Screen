@@ -1,24 +1,19 @@
-# Playnite Boot Screen 0.8.0
+# Playnite Boot Screen 0.8.1
 
-Version 0.8.0 focuses on predictable video completion, cleaner streaming startup, WebM compatibility, and better cooperation with Fullscreen themes and helpers.
+Version 0.8.1 focuses on a clearer first-time setup and more reliable Desktop-to-Fullscreen startup on systems that change display topology while Playnite is opening.
 
 ## Highlights
 
-- **New video-end behavior controls** — reveal Playnite as soon as it is ready, wait for the video to finish, or loop until Playnite is ready.
-- **WebM compatibility** — WebM files are exposed to the Windows media pipeline through a local MKV compatibility alias, without transcoding or FFmpeg.
-- **Improved Sunshine / Apollo / VibePollo startup** — Preload primes and rewinds the decoder, then Continue restarts playback from the beginning.
-- **Aniki ReMake / Aniki Helper integration** — compatible helpers can detect when PBS is already handling the startup intro and avoid playing a duplicate intro.
-- **Optional Aniki ReMake intro included** — the extended intro is bundled as a selectable video while custom media remains fully supported.
-- **Safer streaming failure handling** — an abandoned Preload now closes after 10 seconds, and a new Continue-entry log helps diagnose rare Detached launch failures.
-
-## Aniki ReMake integration
-
-Playnite Boot Screen now publishes `Local\PlayniteBootScreen.StartupIntroHandled.v1` while it is actively handling startup. Aniki Helper can use this marker to suppress its own startup intro for that launch, avoiding two intro videos back to back.
-
-The integration is independent from the selected video: the bundled extended Aniki ReMake intro is optional, and PBS continues to work normally with custom videos and other themes.
+- **Guided Quick Setup** — the main settings page now keeps the essential launch, video, and reveal controls together, with a compact Ready / Setup needed status in the header.
+- **Shortcut icon choices** — PBS-managed Desktop and Start menu shortcuts can use the Playnite Boot Screen icon, the Playnite Fullscreen icon, or a custom `.ico` file copied into persistent extension data.
+- **Topology-aware Desktop → Fullscreen readiness** — Switch mode refreshes the active Windows display layout while Playnite starts, so setups that move from Extended mode to a single TV/display no longer keep checking against a stale monitor snapshot.
+- **Safer Fullscreen window detection** — PBS still prefers Playnite's `MainWindowHandle`, but can fall back to another visible top-level window owned by the exact Playnite Fullscreen PID when the main handle is temporarily pointing at a transient window.
+- **Safer video failure fallback** — if Windows media playback fails during a display change, the failed video surface is hidden and PBS continues waiting for Playnite instead of leaving a frozen frame visible.
 
 ## Compatibility
 
-Existing 0.7.x playback settings are migrated automatically. Existing shortcuts, custom media, and streaming configuration remain compatible.
+Existing 0.8.0 settings are migrated automatically. Existing installations keep the historical Playnite Fullscreen shortcut icon choice, while fresh installations default to the Playnite Boot Screen icon. Custom media, shortcut state, and streaming configuration remain compatible.
 
-Runtime updated to 1.0.9.
+The dynamic display-topology refresh is limited to Desktop-to-Fullscreen Switch readiness; it does not retarget or move the PBS overlay. Manual monitor selection remains available for explicit overlay placement.
+
+Runtime updated to 1.0.13.
